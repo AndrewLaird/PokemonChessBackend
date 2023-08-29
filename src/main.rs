@@ -11,6 +11,9 @@ pub mod pieces;
 pub mod pokemon_types;
 
 use crate::chess_structs::ChessBoard;
+use tower_http::cors::CorsLayer;
+use std::net::SocketAddr;
+
 
 #[tokio::main]
 async fn main() {
@@ -18,7 +21,8 @@ async fn main() {
         .route("/", get(root))
         .route("/move", get(make_move))
         .route("/move_piece", get(move_piece))
-        .route("/chessboard", get(get_board));
+        .route("/chessboard", get(get_board))
+        .layer(CorsLayer::permissive());
 
     // run it with hyper on localhost:3000
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
