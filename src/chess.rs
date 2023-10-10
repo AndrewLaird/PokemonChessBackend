@@ -7,7 +7,7 @@ use rand::thread_rng;
 pub const BOARD_SIZE: usize = 8;
 
 pub use crate::chess_structs::{
-    ChessBoard, ChessHistory, ChessPieceType, Move, Piece, PokemonType,
+    ChessBoard, ChessHistory, ChessPieceType, Move, Piece, PokemonType, Player
 };
 
 impl ChessBoard {
@@ -16,10 +16,54 @@ impl ChessBoard {
         return board;
     }
 
-    pub fn possible_moves_for_piece(&self, row: usize, col: usize) -> Vec<Move> {
+    pub fn piece_same_as_player(piece: Piece, player: &Player) -> bool {
+        return piece.piece_type.is_white() == (player == &Player::White);
+    }
+
+    pub fn find_king_position(&self, player:Player) -> (usize, usize) {
+        for row in 0..BOARD_SIZE {
+            for col in 0..BOARD_SIZE {
+                let piece = self.get_piece(row, col);
+                if ChessBoard::piece_same_as_player(piece, &player) {
+                    return (row, col);
+                }
+            }
+        }
+        return (usize::MAX, usize::MAX);
+    }
+
+    pub fn pieces_attacking_king(&self, king_position: (usize, usize), player: Player) -> bool {
+        for row in 0..BOARD_SIZE {
+            for col in 0..BOARD_SIZE {
+                let piece = self.get_piece(row, col);
+                if ChessBoard::piece_same_as_player(piece, &player) {
+                    let moves = piece.piece_type.available_moves(row, col, self);
+                    for piece_move in moves {
+                        if piece_move.to_row == king_position.0 && piece_move.to_col == king_position.1 {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    pub fn is_king_in_check(&self,  player: Player) -> bool {
+        let king_position = self.find_king_position(player.clone());
+        // check if any of the other player's pieces are attacking the king
+        return self.pieces_attacking_king(king_position, player.clone());
+    }
+
+
+    pub fn possible_moves_for_piece(&self, row: usize, col: usize, player: Player) -> Vec<Move> {
         let piece: Piece = self.get_piece(row, col);
-        let moves = piece.piece_type.available_moves(row, col, self);
-        return moves;
+        // make sure they are the same type, white or black
+        if piece.piece_type.is_white() == (player == Player::White) {
+            let moves = piece.piece_type.available_moves(row, col, self);
+            return moves;
+        }
+        return vec![];
     }
 
     // Separate because the piece does not always cover the captured piece
@@ -30,10 +74,10 @@ impl ChessBoard {
         return new_board;
     }
 
-    pub fn move_piece(&self, from_row: usize, from_col: usize, to_row: usize, to_col: usize) -> ChessBoard {
+    pub fn move_piece(&self, from_row: usize, from_col: usize, to_row: usize, to_col: usize, player: Player) -> ChessBoard {
         //validate that the piece can move there
         let piece  = self.get_piece(from_row, from_col);
-        let possible_moves_for_piece = self.possible_moves_for_piece(from_row, from_col);
+        let possible_moves_for_piece = self.possible_moves_for_piece(from_row, from_col, player);
 
         for possible_move in possible_moves_for_piece {
             if possible_move.to_row == to_row && possible_move.to_col == to_col {
@@ -58,9 +102,6 @@ impl ChessBoard {
                 return new_board;
             }
         }
-
-        assert!(false, "Invalid move");
-
         return self.clone();
 
     }
@@ -225,6 +266,23 @@ impl ChessBoard {
         };
         format!("{}{} {}", color, chess_type, pokemon_type)
     }
+
+    pub fn display_board_str(&self) -> String {
+        let mut result = String::new();
+        
+        for i in (0..BOARD_SIZE).rev() {
+            for j in 0..BOARD_SIZE {
+                let piece = self.board[i][j];
+                result += &format!("|{}| ", ChessBoard::format_piece(piece));
+            }
+            result += "\n";
+            result += "-------------------------------------------------------------------------------\n";
+        }
+        result += "\n";
+        
+        return result;
+    }
+
 
     pub fn display_board(&self) {
         for i in (0..BOARD_SIZE).rev() {
