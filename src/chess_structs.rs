@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 pub const BOARD_SIZE: usize = 8;
 pub const WHITE_EN_PASSANT_ROW: usize = 4;
@@ -28,7 +28,7 @@ pub struct ChessState {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy)]
-pub enum Player{
+pub enum Player {
     White,
     Black,
 }
@@ -71,7 +71,7 @@ pub struct Castle {
 pub struct Capture {
     pub row: usize,
     pub col: usize,
-    pub piece: Piece
+    pub piece: Piece,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]

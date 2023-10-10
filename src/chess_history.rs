@@ -12,7 +12,6 @@ impl ChessHistory {
     const QUEEN_SIDE_ROOK_COL: usize = 0;
     const KING_SIDE_ROOK_COL: usize = 7;
 
-
     pub fn new() -> Self {
         return ChessHistory {
             move_history: Vec::new(),
@@ -76,20 +75,40 @@ impl ChessHistory {
 
     pub fn can_castle_kingside(&self, is_white: bool) -> bool {
         if is_white {
-            return self.rook_has_not_moved(ChessHistory::WHITE_KING_START_ROW, ChessHistory::KING_SIDE_ROOK_COL)
-                && self.king_has_not_moved(ChessHistory::WHITE_KING_START_ROW, ChessHistory::KING_START_COL);
+            return self.rook_has_not_moved(
+                ChessHistory::WHITE_KING_START_ROW,
+                ChessHistory::KING_SIDE_ROOK_COL,
+            ) && self.king_has_not_moved(
+                ChessHistory::WHITE_KING_START_ROW,
+                ChessHistory::KING_START_COL,
+            );
         } else {
-            return self.rook_has_not_moved(ChessHistory::BLACK_KING_START_ROW, ChessHistory::KING_SIDE_ROOK_COL)
-                && self.king_has_not_moved(ChessHistory::BLACK_KING_START_ROW, ChessHistory::KING_START_COL);
+            return self.rook_has_not_moved(
+                ChessHistory::BLACK_KING_START_ROW,
+                ChessHistory::KING_SIDE_ROOK_COL,
+            ) && self.king_has_not_moved(
+                ChessHistory::BLACK_KING_START_ROW,
+                ChessHistory::KING_START_COL,
+            );
         }
     }
     pub fn can_castle_queenside(&self, is_white: bool) -> bool {
         if is_white {
-            return self.rook_has_not_moved(ChessHistory::WHITE_KING_START_ROW, ChessHistory::QUEEN_SIDE_ROOK_COL)
-                && self.king_has_not_moved(ChessHistory::WHITE_KING_START_ROW, ChessHistory::KING_START_COL);
+            return self.rook_has_not_moved(
+                ChessHistory::WHITE_KING_START_ROW,
+                ChessHistory::QUEEN_SIDE_ROOK_COL,
+            ) && self.king_has_not_moved(
+                ChessHistory::WHITE_KING_START_ROW,
+                ChessHistory::KING_START_COL,
+            );
         } else {
-            return self.rook_has_not_moved(ChessHistory::BLACK_KING_START_ROW, ChessHistory::QUEEN_SIDE_ROOK_COL)
-                && self.king_has_not_moved(ChessHistory::BLACK_KING_START_ROW, ChessHistory::KING_START_COL);
+            return self.rook_has_not_moved(
+                ChessHistory::BLACK_KING_START_ROW,
+                ChessHistory::QUEEN_SIDE_ROOK_COL,
+            ) && self.king_has_not_moved(
+                ChessHistory::BLACK_KING_START_ROW,
+                ChessHistory::KING_START_COL,
+            );
         }
     }
 }

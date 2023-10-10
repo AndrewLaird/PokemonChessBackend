@@ -1,6 +1,6 @@
 use crate::chess_structs::{
-    Capture, ChessBoard, ChessPieceType, Move, BLACK_EN_PASSANT_ROW, BOARD_SIZE,
-    WHITE_EN_PASSANT_ROW, Piece, PokemonType, Castle
+    Capture, Castle, ChessBoard, ChessPieceType, Move, Piece, PokemonType, BLACK_EN_PASSANT_ROW,
+    BOARD_SIZE, WHITE_EN_PASSANT_ROW,
 };
 
 impl Piece {
@@ -12,7 +12,6 @@ impl Piece {
     }
 }
 
-
 impl ChessPieceType {
     pub fn is_valid_position(to_row: i32, to_col: i32) -> bool {
         let row_valid: bool = to_row >= 0 && to_row < BOARD_SIZE as i32;
@@ -23,13 +22,13 @@ impl ChessPieceType {
         match self {
             ChessPieceType::WhitePawn | ChessPieceType::BlackPawn => {
                 return self.pawn_moves(row, col, &board);
-            },
+            }
             ChessPieceType::WhiteKnight | ChessPieceType::BlackKnight => {
                 return self.knight_moves(row, col, board);
-            },
+            }
             ChessPieceType::WhiteBishop | ChessPieceType::BlackBishop => {
                 return self.bishop_moves(row, col, board);
-            },
+            }
             ChessPieceType::WhiteRook | ChessPieceType::BlackRook => {
                 return self.rook_moves(row, col, board);
             }
@@ -55,12 +54,10 @@ impl ChessPieceType {
             | ChessPieceType::WhiteKing => true,
             _ => false,
         }
-
     }
     pub fn is_opposite_color(&self, other: ChessPieceType) -> bool {
         return self.is_white() != other.is_white();
     }
-
 
     pub fn pawn_moves(&self, row: usize, col: usize, board: &ChessBoard) -> Vec<Move> {
         let mut moves: Vec<Move> = vec![];
@@ -104,7 +101,9 @@ impl ChessPieceType {
         let to_col_attack_right = (col as i32) + 1;
 
         if Self::is_valid_position(to_row_attack, to_col_attack_left) {
-            let piece = board.get_piece(to_row_attack as usize, to_col_attack_left as usize).piece_type;
+            let piece = board
+                .get_piece(to_row_attack as usize, to_col_attack_left as usize)
+                .piece_type;
             if piece.is_opposite_color(*self) {
                 let captured_piece =
                     board.get_piece(to_row_attack as usize, to_col_attack_left as usize);
@@ -126,7 +125,9 @@ impl ChessPieceType {
         }
 
         if Self::is_valid_position(to_row_attack, to_col_attack_right) {
-            let piece = board.get_piece(to_row_attack as usize, to_col_attack_left as usize).piece_type;
+            let piece = board
+                .get_piece(to_row_attack as usize, to_col_attack_left as usize)
+                .piece_type;
             if piece.is_opposite_color(*self) {
                 let captured_piece =
                     board.get_piece(to_row_attack as usize, to_col_attack_left as usize);
@@ -192,7 +193,14 @@ impl ChessPieceType {
                 ChessPieceType::get_valid_or_empty(row as i32, (col - 1) as i32, board);
             match left_piece {
                 Some(Self::BlackPawn) => {
-                    moves.extend(ChessPieceType::get_valid_en_passant(row, col, row, col-1, 1, board));
+                    moves.extend(ChessPieceType::get_valid_en_passant(
+                        row,
+                        col,
+                        row,
+                        col - 1,
+                        1,
+                        board,
+                    ));
                 }
                 _ => {}
             }
@@ -200,7 +208,14 @@ impl ChessPieceType {
                 ChessPieceType::get_valid_or_empty(row as i32, (col + 1) as i32, board);
             match right_piece {
                 Some(Self::BlackPawn) => {
-                    moves.extend(ChessPieceType::get_valid_en_passant(row, col, row, col+1, 1 ,board));
+                    moves.extend(ChessPieceType::get_valid_en_passant(
+                        row,
+                        col,
+                        row,
+                        col + 1,
+                        1,
+                        board,
+                    ));
                 }
                 _ => {}
             }
@@ -212,7 +227,14 @@ impl ChessPieceType {
                 ChessPieceType::get_valid_or_empty(row as i32, (col - 1) as i32, board);
             match left_piece {
                 Some(Self::WhitePawn) => {
-                    moves.extend(ChessPieceType::get_valid_en_passant(row, col, row, col-1, -1, board));
+                    moves.extend(ChessPieceType::get_valid_en_passant(
+                        row,
+                        col,
+                        row,
+                        col - 1,
+                        -1,
+                        board,
+                    ));
                 }
                 _ => {}
             }
@@ -220,7 +242,14 @@ impl ChessPieceType {
                 ChessPieceType::get_valid_or_empty(row as i32, (col + 1) as i32, board);
             match right_piece {
                 Some(Self::WhitePawn) => {
-                    moves.extend(ChessPieceType::get_valid_en_passant(row, col, row, col+1, -1 ,board));
+                    moves.extend(ChessPieceType::get_valid_en_passant(
+                        row,
+                        col,
+                        row,
+                        col + 1,
+                        -1,
+                        board,
+                    ));
                 }
                 _ => {}
             }
@@ -228,7 +257,14 @@ impl ChessPieceType {
         return moves;
     }
 
-    pub fn get_valid_en_passant(row:usize, col:usize, pawn_row: usize, pawn_col: usize, direction: i32,  board: &ChessBoard) -> Vec<Move> {
+    pub fn get_valid_en_passant(
+        row: usize,
+        col: usize,
+        pawn_row: usize,
+        pawn_col: usize,
+        direction: i32,
+        board: &ChessBoard,
+    ) -> Vec<Move> {
         // Simply check if this pawn moved twice last turn
         // and construct the move
         if board.history.pawn_moved_last_turn(pawn_row, pawn_col) {
@@ -236,10 +272,14 @@ impl ChessPieceType {
                 piece_type: ChessPieceType::WhitePawn,
                 from_row: row,
                 from_col: col,
-                to_row: row+direction as usize,
+                to_row: row + direction as usize,
                 to_col: pawn_col,
                 type_interaction: None,
-                capture: Some(Capture{row: pawn_row, col: pawn_col, piece:board.get_piece(pawn_row, pawn_col)}),
+                capture: Some(Capture {
+                    row: pawn_row,
+                    col: pawn_col,
+                    piece: board.get_piece(pawn_row, pawn_col),
+                }),
                 castle: None,
             }];
         } else {
@@ -336,7 +376,7 @@ impl ChessPieceType {
                     _ => {
                         // Check if the piece is an opponent's piece
                         if self.is_opposite_color(target_square.piece_type) {
-                             moves.push(Move {
+                            moves.push(Move {
                                 piece_type: *self,
                                 from_row: row,
                                 from_col: col,
@@ -348,7 +388,7 @@ impl ChessPieceType {
                                     col: new_row as usize,
                                     piece: board.get_piece(new_row as usize, new_row as usize),
                                 }),
-                                castle: None
+                                castle: None,
                             })
                         }
                         // Stop either way, can't jump over pieces
@@ -473,7 +513,6 @@ impl ChessPieceType {
                 }
             }
         }
-        
 
         // check for castling
         if board.history.can_castle_kingside(self.is_white()) {
@@ -502,8 +541,6 @@ impl ChessPieceType {
                     }),
                 });
             }
-
-
         }
         if board.history.can_castle_queenside(self.is_white()) {
             // check if the squares between the king and rook are empty
@@ -531,12 +568,7 @@ impl ChessPieceType {
                     }),
                 });
             }
-
         }
         moves
     }
-
-
-
-
 }
