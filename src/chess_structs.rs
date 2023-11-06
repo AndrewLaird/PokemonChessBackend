@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use crate::settings::Settings;
 
 pub const BOARD_SIZE: usize = 8;
 pub const WHITE_EN_PASSANT_ROW: usize = 4;
@@ -24,7 +25,17 @@ pub struct ChessBoard {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChessState {
     pub chessboard: ChessBoard,
+    pub settings: Settings,
     pub player: Player,
+    pub winner: Winner,
+    pub info_message: Option<InfoMessage>
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy)]
+pub enum InfoMessage {
+    SuperEffective,
+    NotVeryEffective,
+    NoEffect,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy)]
@@ -33,11 +44,27 @@ pub enum Player {
     Black,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy)]
+pub enum Winner {
+    White,
+    Black,
+    Tie,
+    NoneYet
+}
+
+
+
 impl Player {
     pub fn other_player(&self) -> Player {
         match self {
             Player::White => Player::Black,
             Player::Black => Player::White,
+        }
+    }
+    pub fn other_player_with_type_interaction(&self, type_interaction: InteractionType) -> Player{
+        match type_interaction {
+            InteractionType::SuperEffective => *self,
+            _ => self.other_player()
         }
     }
 }

@@ -7,7 +7,7 @@ use rand::thread_rng;
 pub const BOARD_SIZE: usize = 8;
 
 pub use crate::chess_structs::{
-    ChessBoard, ChessHistory, ChessPieceType, Move, Piece, Player, PokemonType,
+    ChessBoard, ChessHistory, ChessPieceType, Move, Piece, Player, PokemonType, InteractionType, Capture, Winner
 };
 
 impl ChessBoard {
@@ -57,21 +57,42 @@ impl ChessBoard {
         return self.pieces_attacking_king(king_position, player.clone());
     }
 
+    pub fn get_winner(&self) -> Winner {
+        // we only need to check if it's max or not so lets just use the x
+        let white_king = self.find_king_position(Player::White).0;
+        let black_king = self.find_king_position(Player::Black).0;
+        println!("white_king: {}, black_king: {}", white_king, black_king);
+        match (white_king, black_king) {
+            (usize::MAX, usize::MAX) => Winner::Tie,
+            (usize::MAX, _) => Winner::White,
+            (_, usize::MAX) => Winner::Black,
+            (_, _) => Winner::NoneYet,
+        }
+
+    }
+
     pub fn possible_moves_for_piece(&self, row: usize, col: usize, player: Player) -> Vec<Move> {
         let piece: Piece = self.get_piece(row, col);
         // make sure they are the same type, white or black
-        if piece.piece_type.is_white() == (player == Player::White) {
-            let moves = piece.piece_type.available_moves(row, col, self);
-            return moves;
+        if piece.piece_type.is_white() != (player == Player::White) {
+            return vec![];
         }
-        return vec![];
+        let mut moves = piece.piece_type.available_moves(row, col, self);
+        for move_obj in &mut moves {
+            // update with type interactions
+            let other_piece = self.get_piece(move_obj.to_row, move_obj.to_col);
+            let type_matchup: InteractionType = PokemonType::type_matchup(piece.pokemon_type, other_piece.pokemon_type);
+            move_obj.type_interaction = Some(type_matchup);
+            
+        }
+        return moves;
     }
 
     // Separate because the piece does not always cover the captured piece
     // specifically for en passant
-    pub fn capture_piece(&self, row: usize, col: usize) -> ChessBoard {
+    pub fn capture_piece(&self, capture: Capture, move_to_execute: Move) -> ChessBoard {
         let mut new_board = self.clone();
-        new_board.board[row][col] = Piece::empty();
+        new_board.board[capture.row][capture.col] = Piece::empty();
         return new_board;
     }
 
@@ -83,36 +104,74 @@ impl ChessBoard {
         to_col: usize,
         player: Player,
     ) -> ChessBoard {
-        //validate that the piece can move there
-        let piece = self.get_piece(from_row, from_col);
-        let possible_moves_for_piece = self.possible_moves_for_piece(from_row, from_col, player);
-
-        for possible_move in possible_moves_for_piece {
-            if possible_move.to_row == to_row && possible_move.to_col == to_col {
-                //move the piece
-                let mut new_board = self.clone();
-                match possible_move.capture {
-                    Some(capture) => {
-                        new_board = new_board.capture_piece(capture.row, capture.col);
-                    }
-                    None => {}
-                }
-                match possible_move.castle {
-                    Some(castle) => {
-                        new_board.board[castle.rook_to_row][castle.rook_to_col] =
-                            self.get_piece(castle.rook_from_row, castle.rook_from_col);
-                        new_board.board[castle.rook_from_row][castle.rook_from_col] =
-                            Piece::empty();
-                    }
-                    None => {}
-                }
-                new_board.board[to_row][to_col] = piece;
-                new_board.board[from_row][from_col] = Piece::empty();
-                new_board.history.add_move(possible_move);
-                return new_board;
-            }
+        if self.is_move_valid(from_row, from_col, to_row, to_col, player) {
+            self.execute_move(from_row, from_col, to_row, to_col)
+        } else {
+            self.clone()
         }
-        return self.clone();
+    }
+
+    fn is_move_valid(
+        &self,
+        from_row: usize,
+        from_col: usize,
+        to_row: usize,
+        to_col: usize,
+        player: Player,
+    ) -> bool {
+        let possible_moves = self.possible_moves_for_piece(from_row, from_col, player);
+        possible_moves.iter().any(|pm| pm.to_row == to_row && pm.to_col == to_col)
+    }
+
+    fn find_move(
+        &self,
+        from_row: usize,
+        from_col: usize,
+        to_row: usize,
+        to_col: usize,
+    ) -> Option<Move> {
+        // Since possible_moves_for_piece might add type interactions or other state,
+        // we fetch the current piece and check its valid moves.
+        let player = if self.get_piece(from_row, from_col).piece_type.is_white() {
+            Player::White
+        } else {
+            Player::Black
+        };
+
+        let possible_moves = self.possible_moves_for_piece(from_row, from_col, player);
+        possible_moves.into_iter().find(|m| m.to_row == to_row && m.to_col == to_col)
+    }
+
+    fn execute_move(&self, from_row: usize, from_col: usize, to_row: usize, to_col: usize) -> ChessBoard {
+        let mut new_board = self.clone();
+        let piece = self.get_piece(from_row, from_col);
+        let move_to_execute = self.find_move(from_row, from_col, to_row, to_col).unwrap(); // assuming find_move is another method returning Option<Move>
+
+        new_board.handle_captures_and_special_moves(&move_to_execute);
+        new_board.board[to_row][to_col] = piece;
+        new_board.board[from_row][from_col] = Piece::empty();
+        new_board.history.add_move(move_to_execute);
+
+        new_board
+    }
+
+    fn handle_captures_and_special_moves(&mut self, move_to_execute: &Move) {
+        self.capture_piece_if_applicable(move_to_execute);
+        self.handle_castling_if_applicable(move_to_execute);
+    }
+
+    fn capture_piece_if_applicable(&mut self, move_to_execute: &Move) {
+        if let Some(capture) = move_to_execute.capture {
+            self.capture_piece(capture, *move_to_execute);
+        }
+    }
+
+    fn handle_castling_if_applicable(&mut self, move_to_execute: &Move) {
+        if let Some(castle) = move_to_execute.castle {
+            self.board[castle.rook_to_row][castle.rook_to_col] =
+                self.get_piece(castle.rook_from_row, castle.rook_from_col);
+            self.board[castle.rook_from_row][castle.rook_from_col] = Piece::empty();
+        }
     }
 
     pub fn get_piece(&self, row: usize, col: usize) -> Piece {
@@ -305,5 +364,14 @@ impl ChessBoard {
             );
         }
         println!();
+    }
+
+    pub fn get_last_move_interaction_type(&self) -> InteractionType {
+
+        match self.history.move_history.last(){
+            Some(this_move) => this_move.type_interaction.unwrap(),
+            _ => InteractionType::Normal,
+        }
+
     }
 }

@@ -1,3 +1,4 @@
+use log::info;
 use crate::chess_structs::{
     Capture, Castle, ChessBoard, ChessPieceType, Move, Piece, PokemonType, BLACK_EN_PASSANT_ROW,
     BOARD_SIZE, WHITE_EN_PASSANT_ROW,
@@ -58,6 +59,9 @@ impl ChessPieceType {
     pub fn is_opposite_color(&self, other: ChessPieceType) -> bool {
         return self.is_white() != other.is_white();
     }
+    pub fn is_piece_and_opposite_color(&self, other: ChessPieceType) -> bool {
+        return other != ChessPieceType::Empty && self != &ChessPieceType::Empty && self.is_white() != other.is_white();
+    }
 
     pub fn pawn_moves(&self, row: usize, col: usize, board: &ChessBoard) -> Vec<Move> {
         let mut moves: Vec<Move> = vec![];
@@ -76,9 +80,6 @@ impl ChessPieceType {
 
         // Check if pawn can move forward
         let to_row: i32 = (row as i32) + direction;
-        if to_row < 0 || to_row > 7 {
-            // can't move here
-        }
         if Self::is_valid_position(to_row, col as i32)
             && board.get_piece(to_row as usize, col).piece_type == ChessPieceType::Empty
         {
@@ -102,11 +103,9 @@ impl ChessPieceType {
 
         if Self::is_valid_position(to_row_attack, to_col_attack_left) {
             let piece = board
-                .get_piece(to_row_attack as usize, to_col_attack_left as usize)
-                .piece_type;
-            if piece.is_opposite_color(*self) {
-                let captured_piece =
-                    board.get_piece(to_row_attack as usize, to_col_attack_left as usize);
+                .get_piece(to_row_attack as usize, to_col_attack_left as usize);
+            if piece.piece_type.is_piece_and_opposite_color(*self) {
+                info!("Pawn can capture diagonally left");
                 moves.push(Move {
                     piece_type: *self,
                     from_row: row,
@@ -117,7 +116,7 @@ impl ChessPieceType {
                     capture: Some(Capture {
                         row: to_row_attack as usize,
                         col: to_col_attack_left as usize,
-                        piece: captured_piece,
+                        piece: piece,
                     }),
                     castle: None,
                 });
@@ -126,22 +125,19 @@ impl ChessPieceType {
 
         if Self::is_valid_position(to_row_attack, to_col_attack_right) {
             let piece = board
-                .get_piece(to_row_attack as usize, to_col_attack_left as usize)
-                .piece_type;
-            if piece.is_opposite_color(*self) {
-                let captured_piece =
-                    board.get_piece(to_row_attack as usize, to_col_attack_left as usize);
+                .get_piece(to_row_attack as usize, to_col_attack_right as usize);
+            if piece.piece_type.is_piece_and_opposite_color(*self) {
                 moves.push(Move {
                     piece_type: *self,
                     from_row: row,
                     from_col: col,
                     to_row: to_row_attack as usize,
-                    to_col: to_col_attack_left as usize,
+                    to_col: to_col_attack_right as usize,
                     type_interaction: None,
                     capture: Some(Capture {
                         row: to_row_attack as usize,
-                        col: to_col_attack_left as usize,
-                        piece: captured_piece,
+                        col: to_col_attack_right as usize,
+                        piece: piece,
                     }),
                     castle: None,
                 });

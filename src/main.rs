@@ -10,9 +10,16 @@ pub mod chess_structs;
 pub mod database;
 pub mod pieces;
 pub mod pokemon_types;
+pub mod pokemon_names;
+pub mod name_generator;
+pub mod settings;
+pub mod messages;
 
-use crate::chess_structs::{ChessBoard, ChessState, Move, Player, Position};
+
+use crate::chess_structs::{ChessBoard, ChessState, Move, Player, InfoMessage};
 use crate::database::{load_board, save_board};
+use crate::name_generator::generate_game_name;
+use crate::settings::Settings;
 use tower_http::cors::CorsLayer;
 
 #[tokio::main]
@@ -27,6 +34,8 @@ async fn main() {
         .route("/get_moves", get(get_moves))
         .route("/move_piece", get(move_piece))
         .route("/chessboard", get(get_board))
+        .route("/generate_name", get(get_game_name))
+        .route("/get_game_state", get(get_game_state))
         .layer(CorsLayer::permissive());
 
     // run it with hyper on localhost:3000
@@ -36,16 +45,28 @@ async fn main() {
         .unwrap();
 }
 
-// The query parameters for todos index
 #[derive(Deserialize)]
 pub struct StartGame {
+    pub name: String,
+    pub simplified_visual: bool,
+    pub online_play: bool,
+    pub critical_hits: bool,
+    pub misses: bool,
+}
+
+
+#[derive(Deserialize)]
+pub struct GetGame {
     pub name: String,
 }
 
 async fn start_game(Query(params): Query<StartGame>) -> Json<ChessState> {
     let chessboard = ChessBoard::new();
     let player = Player::White;
-    let chess_state = ChessState { chessboard, player };
+    let settings = Settings::new();
+    let winner = chess::Winner::NoneYet;
+    let info_message = None;
+    let chess_state = ChessState { chessboard, settings, player, winner, info_message};
     let result = save_board(params.name, chess_state.clone()).await;
     match result {
         Ok(_) => info!("saved board"),
@@ -54,30 +75,20 @@ async fn start_game(Query(params): Query<StartGame>) -> Json<ChessState> {
     return Json(chess_state);
 }
 
+async fn get_game_state(Query(params): Query<GetGame>) -> Json<Option<ChessState>> {
+    let chess_state = load_board(&params.name).await;
+    return match chess_state{
+        Ok(state) => Json(Some(state)),
+        _ => Json(None)
+    }
+}
+
 // The query parameters for todos index
 #[derive(Deserialize)]
 pub struct GetMoves {
     pub name: String,
     pub row: usize,
     pub col: usize,
-}
-
-// List of valid moves for a piece
-async fn valid_moves(Query(params): Query<GetMoves>) -> Json<Vec<Position>> {
-    let board_state = load_board(&params.name).await.unwrap();
-    let board = board_state.chessboard;
-    let row = params.row;
-    let col = params.col;
-    let piece = board.board[row][col];
-    let valid_positions = piece.piece_type.available_moves(row, col, &board);
-    let valid_moves = valid_positions
-        .iter()
-        .map(|position| Position {
-            row: position.to_row,
-            col: position.to_col,
-        })
-        .collect::<Vec<Position>>();
-    return Json(valid_moves);
 }
 
 async fn root() -> &'static str {
@@ -138,9 +149,12 @@ async fn move_piece(Query(params): Query<UserMove>) -> Json<ChessState> {
         params.to_col,
         chess_state.player.clone(),
     );
-    info!("{:?}", chessboard.display_board_str());
+    // last move Interaction type
+    let last_move_interaction_type = chessboard.get_last_move_interaction_type();
     chess_state.chessboard = chessboard;
-    chess_state.player = chess_state.player.other_player();
+    chess_state.player = chess_state.player.other_player_with_type_interaction(last_move_interaction_type);
+    chess_state.info_message = InfoMessage::get_message_from_interaction_type(last_move_interaction_type);
+    chess_state.winner = chess_state.chessboard.get_winner();
     save_board(name, chess_state.clone()).await.unwrap();
     return Json(chess_state);
 }
@@ -148,4 +162,9 @@ async fn move_piece(Query(params): Query<UserMove>) -> Json<ChessState> {
 async fn get_board() -> Json<ChessBoard> {
     let chessboard = ChessBoard::new();
     return Json(chessboard);
+}
+
+async fn get_game_name() -> Json<String> {
+    let name = generate_game_name().await.unwrap();
+    return Json(name);
 }

@@ -1,6 +1,7 @@
 use crate::chess_structs::{ChessBoard, ChessState};
-use tokio::fs::File;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::fs::{File, OpenOptions};
+use tokio::io::{AsyncReadExt, AsyncWriteExt, AsyncBufReadExt , BufReader};
+use std::error::Error;
 
 pub async fn save_board(
     file_name: String,
@@ -35,4 +36,38 @@ pub async fn load_board(file_name: &String) -> Result<ChessState, Box<dyn std::e
     let board: ChessState = serde_json::from_str(&contents)?;
 
     Ok(board)
+}
+
+
+
+
+pub async fn read_names_from_file() -> Result<Vec<String>, Box<dyn Error>> {
+    let filename = "game_names.txt";
+    let file = File::open(&filename).await?;
+    let reader = BufReader::new(file);
+    let mut names = Vec::new();
+
+    let mut lines = reader.lines();
+    while let Some(line) = lines.next_line().await? {
+        names.push(line);
+    }
+
+    Ok(names)
+}
+
+pub async fn write_name_to_file(name: String) -> Result<(), Box<dyn Error>> {
+    let filename = "game_names.txt";
+    let mut file = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .create(true)
+        .open(filename)
+        .await?;
+
+    file.write_all(name.as_bytes()).await?;
+    file.write_all(b"\n").await?;
+
+    file.flush().await?;  // Ensure all writes are flushed to the file.
+
+    Ok(())
 }
