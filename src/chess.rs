@@ -24,7 +24,7 @@ impl ChessBoard {
         for row in 0..BOARD_SIZE {
             for col in 0..BOARD_SIZE {
                 let piece = self.get_piece(row, col);
-                if ChessBoard::piece_same_as_player(piece, &player) {
+                if piece.piece_type.is_king() ==  ChessBoard::piece_same_as_player(piece, &player) {
                     return (row, col);
                 }
             }

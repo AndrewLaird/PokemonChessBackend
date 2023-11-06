@@ -56,9 +56,13 @@ impl ChessPieceType {
             _ => false,
         }
     }
+    pub fn is_king(&self) -> bool {
+        return *self == ChessPieceType::WhiteKing || *self == ChessPieceType::BlackKing;
+    }
     pub fn is_opposite_color(&self, other: ChessPieceType) -> bool {
         return self.is_white() != other.is_white();
     }
+
     pub fn is_piece_and_opposite_color(&self, other: ChessPieceType) -> bool {
         return other != ChessPieceType::Empty && self != &ChessPieceType::Empty && self.is_white() != other.is_white();
     }
@@ -116,7 +120,7 @@ impl ChessPieceType {
                     capture: Some(Capture {
                         row: to_row_attack as usize,
                         col: to_col_attack_left as usize,
-                        piece: piece,
+                        piece,
                     }),
                     castle: None,
                 });
@@ -137,7 +141,7 @@ impl ChessPieceType {
                     capture: Some(Capture {
                         row: to_row_attack as usize,
                         col: to_col_attack_right as usize,
-                        piece: piece,
+                        piece,
                     }),
                     castle: None,
                 });
