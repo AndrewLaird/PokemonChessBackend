@@ -1,14 +1,13 @@
 use log::info;
 use crate::chess_structs::{
-    Capture, Castle, ChessBoard, ChessPieceType, Move, Piece, PokemonType, BLACK_EN_PASSANT_ROW,
-    BOARD_SIZE, WHITE_EN_PASSANT_ROW,
+    Capture, Castle, ChessBoard, ChessPieceType, Move, Piece, PokemonType, Player, BOARD_SIZE,
 };
 
 impl Piece {
     pub fn empty() -> Self {
         Self {
             piece_type: ChessPieceType::Empty,
-            pokemon_type: PokemonType::Normal,
+            pokemon_type: PokemonType::NoType,
         }
     }
 }
@@ -181,80 +180,35 @@ impl ChessPieceType {
         return moves;
     }
 
+
     pub fn en_passant_move(&self, row: usize, col: usize, board: &ChessBoard) -> Vec<Move> {
-        // Ok so the pawn to the left or the right have to be the oposite team
-        // and it must have just moved twice last turn
-        // and it must be in the correct row
         let mut moves: Vec<Move> = vec![];
+        let direction = if self == &ChessPieceType::WhitePawn { 1 } else { -1 };
 
-        if row == WHITE_EN_PASSANT_ROW && self == &ChessPieceType::WhitePawn {
-            // check if the pawn to the left or right of the pawn is black
-            let left_piece: Option<ChessPieceType> =
-                ChessPieceType::get_valid_or_empty(row as i32, (col - 1) as i32, board);
-            match left_piece {
-                Some(Self::BlackPawn) => {
-                    moves.extend(ChessPieceType::get_valid_en_passant(
-                        row,
-                        col,
-                        row,
-                        col - 1,
-                        1,
-                        board,
-                    ));
-                }
-                _ => {}
-            }
-            let right_piece: Option<ChessPieceType> =
-                ChessPieceType::get_valid_or_empty(row as i32, (col + 1) as i32, board);
-            match right_piece {
-                Some(Self::BlackPawn) => {
-                    moves.extend(ChessPieceType::get_valid_en_passant(
-                        row,
-                        col,
-                        row,
-                        col + 1,
-                        1,
-                        board,
-                    ));
-                }
-                _ => {}
+        if let Some((en_passant_row, en_passant_col)) = board.history.last_move_enables_en_passant() {
+            // Check if the en passant opportunity is on the same row as the pawn and adjacent column
+            if en_passant_row == row && (en_passant_col == col + 1 || en_passant_col == col - 1) {
+                // Create the en passant move
+                let target_row = row as isize + direction;
+                let target_col = en_passant_col as isize; // en passant captures the pawn "in passing"
+                moves.push(Move {
+                    piece_type: *self, // assuming self is a ChessPieceType
+                    from_row: row,
+                    from_col: col,
+                    to_row: target_row as usize,
+                    to_col: target_col as usize,
+                    type_interaction: None, // Set this according to your game's rules
+                    capture: Some(Capture {
+                        row: row, // Pawn stays on the same row for en passant
+                        col: en_passant_col, // Pawn captures the one that moved two squares
+                        piece: board.get_piece(row, en_passant_col), // Captured pawn
+                    }),
+                    castle: None,
+                });
             }
         }
 
-        if row == BLACK_EN_PASSANT_ROW && self == &ChessPieceType::BlackPawn {
-            // check if the pawn to the left or right of the pawn is White
-            let left_piece: Option<ChessPieceType> =
-                ChessPieceType::get_valid_or_empty(row as i32, (col - 1) as i32, board);
-            match left_piece {
-                Some(Self::WhitePawn) => {
-                    moves.extend(ChessPieceType::get_valid_en_passant(
-                        row,
-                        col,
-                        row,
-                        col - 1,
-                        -1,
-                        board,
-                    ));
-                }
-                _ => {}
-            }
-            let right_piece: Option<ChessPieceType> =
-                ChessPieceType::get_valid_or_empty(row as i32, (col + 1) as i32, board);
-            match right_piece {
-                Some(Self::WhitePawn) => {
-                    moves.extend(ChessPieceType::get_valid_en_passant(
-                        row,
-                        col,
-                        row,
-                        col + 1,
-                        -1,
-                        board,
-                    ));
-                }
-                _ => {}
-            }
-        }
-        return moves;
+        moves
     }
 
     pub fn get_valid_en_passant(

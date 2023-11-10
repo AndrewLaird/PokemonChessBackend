@@ -14,6 +14,7 @@ pub mod pokemon_names;
 pub mod name_generator;
 pub mod settings;
 pub mod messages;
+pub mod moves;
 
 
 use crate::chess_structs::{ChessBoard, ChessState, Move, Player, InfoMessage};
@@ -110,11 +111,9 @@ pub struct SerializeObject {
     pub result: Option<usize>,
 }
 
-async fn get_moves(Query(params): Query<GetMoves>) -> Json<Vec<Move>> {
-    let chess_state = load_board(&params.name).await.unwrap();
-    let chess_board = chess_state.chessboard;
+async fn get_valid_moves(chess_state: ChessState, chess_board: ChessBoard, params: GetMoves) -> Vec<Move> {
     let moves = chess_board.possible_moves_for_piece(params.row, params.col, chess_state.player);
-    // if the person is in check, only allow moves that get them out of check
+    let current_player = chess_state.player.clone();
     let mut valid_moves = Vec::new();
     for m in moves {
         let mut new_board = chess_board.clone();
@@ -125,12 +124,21 @@ async fn get_moves(Query(params): Query<GetMoves>) -> Json<Vec<Move>> {
             m.to_col,
             chess_state.player,
         );
-        if !new_board.is_king_in_check(chess_state.player) {
+        if !new_board.is_king_in_check(current_player) {
+            new_board.display_board();
             valid_moves.push(m);
         }
     }
-    return Json(valid_moves);
+    valid_moves
 }
+
+async fn get_moves(Query(params): Query<GetMoves>) -> Json<Vec<Move>> {
+    let chess_state = load_board(&params.name).await.unwrap();
+    let chess_board = chess_state.chessboard.clone();
+    let valid_moves = get_valid_moves(chess_state, chess_board, params).await;
+    Json(valid_moves)
+}
+
 
 #[derive(Serialize)]
 pub struct MoveResponse {

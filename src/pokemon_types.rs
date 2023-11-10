@@ -5,8 +5,8 @@ use std::fmt;
 
 // all messed up
 impl PokemonType {
-    pub fn get_type_chart() -> [[InteractionType; 18]; 18] {
-        let type_chart: [[InteractionType; 18]; 18] = [
+    pub fn get_type_chart() -> [[InteractionType; 19]; 19] {
+        let type_chart: [[InteractionType; 19]; 19] = [
             // Normal
             [
                 InteractionType::Normal,
@@ -26,6 +26,7 @@ impl PokemonType {
                 InteractionType::Normal,
                 InteractionType::Normal,
                 InteractionType::NotVeryEffective,
+                InteractionType::Normal,
                 InteractionType::Normal,
             ],
             // Fire
@@ -48,6 +49,7 @@ impl PokemonType {
                 InteractionType::Normal,
                 InteractionType::SuperEffective,
                 InteractionType::Normal,
+                InteractionType::Normal,
             ],
             // Water
             [
@@ -66,6 +68,7 @@ impl PokemonType {
                 InteractionType::SuperEffective,
                 InteractionType::Normal,
                 InteractionType::NotVeryEffective,
+                InteractionType::Normal,
                 InteractionType::Normal,
                 InteractionType::Normal,
                 InteractionType::Normal,
@@ -90,6 +93,7 @@ impl PokemonType {
                 InteractionType::Normal,
                 InteractionType::Normal,
                 InteractionType::Normal,
+                InteractionType::Normal,
             ],
             // Grass
             [
@@ -110,6 +114,7 @@ impl PokemonType {
                 InteractionType::NotVeryEffective,
                 InteractionType::Normal,
                 InteractionType::NotVeryEffective,
+                InteractionType::Normal,
                 InteractionType::Normal,
             ],
             // Ice
@@ -132,6 +137,7 @@ impl PokemonType {
                 InteractionType::Normal,
                 InteractionType::NotVeryEffective,
                 InteractionType::Normal,
+                InteractionType::Normal,
             ],
             // Fighting
             [
@@ -153,6 +159,7 @@ impl PokemonType {
                 InteractionType::SuperEffective,
                 InteractionType::SuperEffective,
                 InteractionType::NotVeryEffective,
+                InteractionType::Normal,
             ],
             // Poison
             [
@@ -174,6 +181,7 @@ impl PokemonType {
                 InteractionType::Normal,
                 InteractionType::NoEffect,
                 InteractionType::SuperEffective,
+                InteractionType::Normal,
             ],
             // Ground
             [
@@ -194,6 +202,7 @@ impl PokemonType {
                 InteractionType::Normal,
                 InteractionType::Normal,
                 InteractionType::SuperEffective,
+                InteractionType::Normal,
                 InteractionType::Normal,
             ],
             // Flying
@@ -216,6 +225,7 @@ impl PokemonType {
                 InteractionType::Normal,
                 InteractionType::NotVeryEffective,
                 InteractionType::Normal,
+                InteractionType::Normal,
             ],
             // Psychic
             [
@@ -236,6 +246,7 @@ impl PokemonType {
                 InteractionType::Normal,
                 InteractionType::NoEffect,
                 InteractionType::NotVeryEffective,
+                InteractionType::Normal,
                 InteractionType::Normal,
             ],
             // Bug
@@ -258,6 +269,7 @@ impl PokemonType {
                 InteractionType::SuperEffective,
                 InteractionType::NotVeryEffective,
                 InteractionType::NotVeryEffective,
+                InteractionType::Normal,
             ],
             // Rock
             [
@@ -279,6 +291,7 @@ impl PokemonType {
                 InteractionType::Normal,
                 InteractionType::NotVeryEffective,
                 InteractionType::Normal,
+                InteractionType::Normal,
             ],
             // Ghost
             [
@@ -298,6 +311,7 @@ impl PokemonType {
                 InteractionType::SuperEffective,
                 InteractionType::Normal,
                 InteractionType::NotVeryEffective,
+                InteractionType::Normal,
                 InteractionType::Normal,
                 InteractionType::Normal,
             ],
@@ -321,6 +335,7 @@ impl PokemonType {
                 InteractionType::Normal,
                 InteractionType::NotVeryEffective,
                 InteractionType::NoEffect,
+                InteractionType::Normal,
             ],
             // Dark
             [
@@ -342,6 +357,7 @@ impl PokemonType {
                 InteractionType::NotVeryEffective,
                 InteractionType::Normal,
                 InteractionType::NotVeryEffective,
+                InteractionType::Normal,
             ],
             // Steel
             [
@@ -363,6 +379,7 @@ impl PokemonType {
                 InteractionType::Normal,
                 InteractionType::NotVeryEffective,
                 InteractionType::SuperEffective,
+                InteractionType::Normal,
             ],
             // Fairy
             [
@@ -383,6 +400,29 @@ impl PokemonType {
                 InteractionType::SuperEffective,
                 InteractionType::SuperEffective,
                 InteractionType::NotVeryEffective,
+                InteractionType::Normal,
+                InteractionType::Normal,
+            ],
+            // NoType (for empty spaces)
+            [
+                InteractionType::Normal,
+                InteractionType::Normal,
+                InteractionType::Normal,
+                InteractionType::Normal,
+                InteractionType::Normal,
+                InteractionType::Normal,
+                InteractionType::Normal,
+                InteractionType::Normal,
+                InteractionType::Normal,
+                InteractionType::Normal,
+                InteractionType::Normal,
+                InteractionType::Normal,
+                InteractionType::Normal,
+                InteractionType::Normal,
+                InteractionType::Normal,
+                InteractionType::Normal,
+                InteractionType::Normal,
+                InteractionType::Normal,
                 InteractionType::Normal,
             ],
         ];

@@ -20,23 +20,29 @@ impl ChessBoard {
         return piece.piece_type.is_white() == (player == &Player::White);
     }
 
-    pub fn find_king_position(&self, player: Player) -> (usize, usize) {
+    pub fn piece_opposite_to_player(piece: Piece, player: &Player) -> bool {
+        return piece.piece_type.is_white() != (player == &Player::White);
+    }
+
+
+    pub fn find_king_position(&self, player: Player) -> Option<(usize, usize)> {
         for row in 0..BOARD_SIZE {
             for col in 0..BOARD_SIZE {
                 let piece = self.get_piece(row, col);
-                if piece.piece_type.is_king() ==  ChessBoard::piece_same_as_player(piece, &player) {
-                    return (row, col);
+                if piece.piece_type.is_king() && ChessBoard::piece_same_as_player(piece, &player) {
+                    println!("{:?}", piece);
+                    return Some((row, col));
                 }
             }
         }
-        return (usize::MAX, usize::MAX);
+        return None;
     }
 
     pub fn pieces_attacking_king(&self, king_position: (usize, usize), player: Player) -> bool {
         for row in 0..BOARD_SIZE {
             for col in 0..BOARD_SIZE {
                 let piece = self.get_piece(row, col);
-                if ChessBoard::piece_same_as_player(piece, &player) {
+                if ChessBoard::piece_opposite_to_player(piece, &player) {
                     let moves = piece.piece_type.available_moves(row, col, self);
                     for piece_move in moves {
                         if piece_move.to_row == king_position.0
@@ -53,22 +59,40 @@ impl ChessBoard {
 
     pub fn is_king_in_check(&self, player: Player) -> bool {
         let king_position = self.find_king_position(player.clone());
+        println!("{:?} {:?}",player, king_position);
         // check if any of the other player's pieces are attacking the king
-        return self.pieces_attacking_king(king_position, player.clone());
+        match king_position  {
+            Some(king_position) => self.pieces_attacking_king(king_position, player.clone()),
+            None => false,
+        }
     }
 
     pub fn get_winner(&self) -> Winner {
-        // we only need to check if it's max or not so lets just use the x
-        let white_king = self.find_king_position(Player::White).0;
-        let black_king = self.find_king_position(Player::Black).0;
-        println!("white_king: {}, black_king: {}", white_king, black_king);
-        match (white_king, black_king) {
-            (usize::MAX, usize::MAX) => Winner::Tie,
-            (usize::MAX, _) => Winner::White,
-            (_, usize::MAX) => Winner::Black,
-            (_, _) => Winner::NoneYet,
-        }
+        let white_king_position = self.find_king_position(Player::White);
+        let black_king_position = self.find_king_position(Player::Black);
 
+        // Check for the existence of kings and determine if they are in check
+        let white_king_in_check = white_king_position.map_or(false, |pos| self.pieces_attacking_king(pos, Player::White));
+        let black_king_in_check = black_king_position.map_or(false, |pos| self.pieces_attacking_king(pos, Player::Black));
+
+        // Check for available moves for each king
+        let white_king_has_moves = white_king_position.map_or(false, |pos| !self.possible_moves_for_piece(pos.0, pos.1, Player::White).is_empty());
+        let black_king_has_moves = black_king_position.map_or(false, |pos| !self.possible_moves_for_piece(pos.0, pos.1, Player::Black).is_empty());
+
+        match (white_king_position, black_king_position) {
+            (None, None) => Winner::Tie, // No kings exist, it's a tie
+            (Some(_), None) => Winner::White, // Only the black king is missing, white wins
+            (None, Some(_)) => Winner::Black, // Only the white king is missing, black wins
+            (Some(_), Some(_)) => {
+                // Both kings exist, check for checkmate or stalemate conditions
+                match (white_king_in_check, white_king_has_moves, black_king_in_check, black_king_has_moves) {
+                    (true, false, _, _) => Winner::Black, // White king is in check and has no moves, black wins
+                    (_, _, true, false) => Winner::White, // Black king is in check and has no moves, white wins
+                    (false, false, false, false) => Winner::Tie, // Stalemate condition, no available moves for either king
+                    _ => Winner::NoneYet, // Game continues, no winner yet
+                }
+            }
+        }
     }
 
     pub fn possible_moves_for_piece(&self, row: usize, col: usize, player: Player) -> Vec<Move> {
@@ -145,11 +169,31 @@ impl ChessBoard {
     fn execute_move(&self, from_row: usize, from_col: usize, to_row: usize, to_col: usize) -> ChessBoard {
         let mut new_board = self.clone();
         let piece = self.get_piece(from_row, from_col);
+        let target_piece = self.get_piece(to_row, to_col);
         let move_to_execute = self.find_move(from_row, from_col, to_row, to_col).unwrap(); // assuming find_move is another method returning Option<Move>
 
-        new_board.handle_captures_and_special_moves(&move_to_execute);
-        new_board.board[to_row][to_col] = piece;
-        new_board.board[from_row][from_col] = Piece::empty();
+        // Check the interaction type and handle "Not Very Effective" outcome
+        if let Some(type_interaction) = move_to_execute.type_interaction {
+            match type_interaction {
+                InteractionType::NotVeryEffective => {
+                    // Destroy both pieces if the interaction is "Not Very Effective"
+                    new_board.board[from_row][from_col] = Piece::empty(); // Remove the attacking piece
+                    new_board.board[to_row][to_col] = Piece::empty(); // Remove the defending piece
+                }
+                _ => {
+                    // Handle other types of interactions
+                    new_board.handle_captures_and_special_moves(&move_to_execute);
+                    new_board.board[to_row][to_col] = piece; // Place the attacking piece in the new position
+                    new_board.board[from_row][from_col] = Piece::empty(); // Remove the attacking piece from the old position
+                }
+            }
+        } else {
+            // If there's no type interaction, proceed with the move normally
+            new_board.handle_captures_and_special_moves(&move_to_execute);
+            new_board.board[to_row][to_col] = piece; // Place the attacking piece in the new position
+            new_board.board[from_row][from_col] = Piece::empty(); // Remove the attacking piece from the old position
+        }
+
         new_board.history.add_move(move_to_execute);
 
         new_board
@@ -367,10 +411,9 @@ impl ChessBoard {
     }
 
     pub fn get_last_move_interaction_type(&self) -> InteractionType {
-
         match self.history.move_history.last(){
             Some(this_move) => this_move.type_interaction.unwrap(),
-            _ => InteractionType::Normal,
+            _ => InteractionType::Empty,
         }
 
     }

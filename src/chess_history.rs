@@ -111,4 +111,33 @@ impl ChessHistory {
             );
         }
     }
+
+    // Check if the last move was a two-square pawn move, which enables en passant
+    pub fn last_move_enables_en_passant(&self) -> Option<(usize, usize)> {
+        if let Some(last_move) = self.move_history.last() {
+            // Check if the last move was made by a pawn
+            let is_pawn_move = matches!(
+                last_move.piece_type,
+                ChessPieceType::WhitePawn | ChessPieceType::BlackPawn
+            );
+
+            // Check if the move was a two-square advance from the starting position
+            let is_two_square_advance = (last_move.from_row as isize - last_move.to_row as isize).abs() == 2;
+
+            // Check if the pawn has not moved from its original row to qualify for en passant
+            let is_initial_move = match last_move.piece_type {
+                ChessPieceType::WhitePawn => last_move.from_row == 1,
+                ChessPieceType::BlackPawn => last_move.from_row == 6,
+                _ => false,
+            };
+
+            if is_pawn_move && is_two_square_advance && is_initial_move {
+                // Return the position to which the pawn moved, enabling en passant
+                return Some((last_move.to_row, last_move.to_col));
+            }
+        }
+
+        // If the last move does not enable en passant, return None
+        None
+    }
 }

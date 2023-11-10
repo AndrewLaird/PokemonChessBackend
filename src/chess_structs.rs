@@ -147,4 +147,5 @@ pub enum PokemonType {
     Dark,
     Steel,
     Fairy,
+    NoType,
 }
