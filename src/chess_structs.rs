@@ -28,7 +28,8 @@ pub struct ChessState {
     pub settings: Settings,
     pub player: Player,
     pub winner: Winner,
-    pub info_message: Option<InfoMessage>
+    pub info_message: Option<InfoMessage>,
+    pub require_piece_selection: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy)]
@@ -118,6 +119,8 @@ pub enum ChessPieceType {
     BlackKing,
 }
 
+
+
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum InteractionType {
     SuperEffective,
@@ -148,4 +151,51 @@ pub enum PokemonType {
     Steel,
     Fairy,
     NoType,
+}
+
+impl ChessPieceType{
+    /**
+     * Used in pawn promotion
+     */
+    pub fn select_piece_from_string_and_player(piece_string: &str, player: Player) -> ChessPieceType {
+        match piece_string {
+            "Pawn" => {
+                match player {
+                    Player::White => ChessPieceType::WhitePawn,
+                    Player::Black => ChessPieceType::BlackPawn,
+                }
+            }
+            "Knight" => {
+                match player {
+                    Player::White => ChessPieceType::WhiteKnight,
+                    Player::Black => ChessPieceType::BlackKnight,
+                }
+            }
+            "Bishop" => {
+                match player {
+                    Player::White => ChessPieceType::WhiteBishop,
+                    Player::Black => ChessPieceType::BlackBishop,
+                }
+            }
+            "Rook" => {
+                match player {
+                    Player::White => ChessPieceType::WhiteRook,
+                    Player::Black => ChessPieceType::BlackRook,
+                }
+            }
+            "Queen" => {
+                match player {
+                    Player::White => ChessPieceType::WhiteQueen,
+                    Player::Black => ChessPieceType::BlackQueen,
+                }
+            }
+            "King" => {
+                match player {
+                    Player::White => ChessPieceType::WhiteKing,
+                    Player::Black => ChessPieceType::BlackKing,
+                }
+            }
+            _ => ChessPieceType::Empty,
+        }
+    }
 }

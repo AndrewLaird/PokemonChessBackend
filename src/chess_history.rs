@@ -1,4 +1,4 @@
-use crate::chess_structs::{ChessHistory, ChessPieceType, Move};
+use crate::chess_structs::{ChessHistory, ChessPieceType, Move, InteractionType};
 
 // Certain Special Moves need more information
 // en passant needs to know the last move
@@ -139,5 +139,37 @@ impl ChessHistory {
 
         // If the last move does not enable en passant, return None
         None
+    }
+
+    /**
+     * returns None if the last move wasn't super effective
+     * otherwise returns the position of the piece that made the super effective move
+     *
+     */
+    pub fn last_move_super_effective(&self) ->  Option<(usize, usize)> {
+        if let Some(last_move) = self.move_history.last() {
+            if last_move.type_interaction.unwrap_or(InteractionType::Normal) == InteractionType::SuperEffective {
+                return Some((last_move.to_row, last_move.to_col));
+            }
+        }
+
+        return None;
+
+    }
+
+    pub fn last_move_requires_pawn_promotion(&self) -> bool {
+        if let Some(last_move) = self.move_history.last() {
+            if last_move.piece_type == ChessPieceType::WhitePawn && last_move.to_row == ChessHistory::BLACK_KING_START_ROW {
+                return true;
+            }
+            if last_move.piece_type == ChessPieceType::BlackPawn && last_move.to_row == ChessHistory::WHITE_KING_START_ROW {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    pub fn last_move(&self) -> Option<Move> {
+        return self.move_history.last().cloned();
     }
 }

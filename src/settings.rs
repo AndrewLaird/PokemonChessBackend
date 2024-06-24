@@ -46,5 +46,4 @@ fn main() {
         .critical_hits(true)
         .misses(false);
 
-    println!("{:?}", my_settings.simplified_visual);
 }

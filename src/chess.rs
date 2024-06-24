@@ -30,7 +30,6 @@ impl ChessBoard {
             for col in 0..BOARD_SIZE {
                 let piece = self.get_piece(row, col);
                 if piece.piece_type.is_king() && ChessBoard::piece_same_as_player(piece, &player) {
-                    println!("{:?}", piece);
                     return Some((row, col));
                 }
             }
@@ -59,7 +58,6 @@ impl ChessBoard {
 
     pub fn is_king_in_check(&self, player: Player) -> bool {
         let king_position = self.find_king_position(player.clone());
-        println!("{:?} {:?}",player, king_position);
         // check if any of the other player's pieces are attacking the king
         match king_position  {
             Some(king_position) => self.pieces_attacking_king(king_position, player.clone()),
@@ -88,7 +86,6 @@ impl ChessBoard {
                 match (white_king_in_check, white_king_has_moves, black_king_in_check, black_king_has_moves) {
                     (true, false, _, _) => Winner::Black, // White king is in check and has no moves, black wins
                     (_, _, true, false) => Winner::White, // Black king is in check and has no moves, white wins
-                    (false, false, false, false) => Winner::Tie, // Stalemate condition, no available moves for either king
                     _ => Winner::NoneYet, // Game continues, no winner yet
                 }
             }
@@ -109,7 +106,19 @@ impl ChessBoard {
             move_obj.type_interaction = Some(type_matchup);
             
         }
+        
         return moves;
+    }
+
+    pub fn filter_moves_if_supereffective(moves: Vec<Move>, position: (usize, usize)) -> Vec<Move> {
+        let mut filtered_moves = Vec::new();
+        for m in moves {
+            if m.from_row == position.0 && m.from_col == position.1 {
+                filtered_moves.push(m);
+            }
+        }
+        return filtered_moves;
+
     }
 
     // Separate because the piece does not always cover the captured piece
@@ -169,7 +178,6 @@ impl ChessBoard {
     fn execute_move(&self, from_row: usize, from_col: usize, to_row: usize, to_col: usize) -> ChessBoard {
         let mut new_board = self.clone();
         let piece = self.get_piece(from_row, from_col);
-        let target_piece = self.get_piece(to_row, to_col);
         let move_to_execute = self.find_move(from_row, from_col, to_row, to_col).unwrap(); // assuming find_move is another method returning Option<Move>
 
         // Check the interaction type and handle "Not Very Effective" outcome
@@ -179,6 +187,9 @@ impl ChessBoard {
                     // Destroy both pieces if the interaction is "Not Very Effective"
                     new_board.board[from_row][from_col] = Piece::empty(); // Remove the attacking piece
                     new_board.board[to_row][to_col] = Piece::empty(); // Remove the defending piece
+                }
+                InteractionType::NoEffect => {
+                    // Neither piece is destroyed if the interaction is "No Effect"
                 }
                 _ => {
                     // Handle other types of interactions
@@ -193,10 +204,29 @@ impl ChessBoard {
             new_board.board[to_row][to_col] = piece; // Place the attacking piece in the new position
             new_board.board[from_row][from_col] = Piece::empty(); // Remove the attacking piece from the old position
         }
-
         new_board.history.add_move(move_to_execute);
+        // if a pawn has moved to the end of the board, promote it to a queen
+        new_board.handle_pawn_promotion_if_applicable(&move_to_execute, piece);
 
         new_board
+    }
+
+    fn handle_pawn_promotion_if_applicable(&mut self, move_to_execute: &Move, piece: Piece) {
+        match (move_to_execute.to_row, piece.piece_type) {
+            (7, ChessPieceType::WhitePawn) => {
+                self.board[move_to_execute.to_row][move_to_execute.to_col] = Piece {
+                    piece_type: ChessPieceType::WhiteQueen,
+                    pokemon_type: piece.pokemon_type,
+                };
+            }
+            (0, ChessPieceType::BlackPawn) => {
+                self.board[move_to_execute.to_row][move_to_execute.to_col] = Piece {
+                    piece_type: ChessPieceType::BlackQueen,
+                    pokemon_type: piece.pokemon_type,
+                };
+            }
+            _ => {}
+        }
     }
 
     fn handle_captures_and_special_moves(&mut self, move_to_execute: &Move) {
@@ -417,4 +447,19 @@ impl ChessBoard {
         }
 
     }
+
+    pub fn select_pawn_promotion_piece(&mut self, piece_str: String, player: Player) -> Result<(), String> {
+        if let Some(location) = self.history.last_move() {
+            let piece_type = ChessPieceType::select_piece_from_string_and_player(&piece_str, player);
+            self.board[location.to_row][location.to_col] = Piece {
+                piece_type,
+                pokemon_type: self.board[location.to_row][location.to_col].pokemon_type,
+            };
+            return Ok(())
+        } 
+        return Err("No last move".to_string())
+    }
+
+
+    
 }
