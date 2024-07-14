@@ -92,7 +92,7 @@ async fn start_game(Query(params): Query<StartGame>) -> Json<ChessState> {
         Ok(_) => info!("saved board"),
         Err(_) => info!("failed to save board"),
     }
-    let setting_result = save_settings(params.name.clone(), settings).await;
+    // let setting_result = save_settings(params.name.clone(), settings).await;
     /*match setting_result {*/
         /*Ok(_) => info!("saved settings"),*/
         /*Err(_) => info!("failed to save settings"),*/
