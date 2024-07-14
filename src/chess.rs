@@ -7,7 +7,8 @@ use rand::thread_rng;
 pub const BOARD_SIZE: usize = 8;
 
 pub use crate::chess_structs::{
-    ChessBoard, ChessHistory, ChessPieceType, Move, Piece, Player, PokemonType, InteractionType, Capture, Winner
+    Capture, ChessBoard, ChessHistory, ChessPieceType, InteractionType, Move, Piece, Player,
+    PokemonType, Winner,
 };
 
 impl ChessBoard {
@@ -23,7 +24,6 @@ impl ChessBoard {
     pub fn piece_opposite_to_player(piece: Piece, player: &Player) -> bool {
         return piece.piece_type.is_white() != (player == &Player::White);
     }
-
 
     pub fn find_king_position(&self, player: Player) -> Option<(usize, usize)> {
         for row in 0..BOARD_SIZE {
@@ -59,7 +59,7 @@ impl ChessBoard {
     pub fn is_king_in_check(&self, player: Player) -> bool {
         let king_position = self.find_king_position(player.clone());
         // check if any of the other player's pieces are attacking the king
-        match king_position  {
+        match king_position {
             Some(king_position) => self.pieces_attacking_king(king_position, player.clone()),
             None => false,
         }
@@ -70,23 +70,38 @@ impl ChessBoard {
         let black_king_position = self.find_king_position(Player::Black);
 
         // Check for the existence of kings and determine if they are in check
-        let white_king_in_check = white_king_position.map_or(false, |pos| self.pieces_attacking_king(pos, Player::White));
-        let black_king_in_check = black_king_position.map_or(false, |pos| self.pieces_attacking_king(pos, Player::Black));
+        let white_king_in_check =
+            white_king_position.map_or(false, |pos| self.pieces_attacking_king(pos, Player::White));
+        let black_king_in_check =
+            black_king_position.map_or(false, |pos| self.pieces_attacking_king(pos, Player::Black));
 
         // Check for available moves for each king
-        let white_king_has_moves = white_king_position.map_or(false, |pos| !self.possible_moves_for_piece(pos.0, pos.1, Player::White).is_empty());
-        let black_king_has_moves = black_king_position.map_or(false, |pos| !self.possible_moves_for_piece(pos.0, pos.1, Player::Black).is_empty());
+        let white_king_has_moves = white_king_position.map_or(false, |pos| {
+            !self
+                .possible_moves_for_piece(pos.0, pos.1, Player::White)
+                .is_empty()
+        });
+        let black_king_has_moves = black_king_position.map_or(false, |pos| {
+            !self
+                .possible_moves_for_piece(pos.0, pos.1, Player::Black)
+                .is_empty()
+        });
 
         match (white_king_position, black_king_position) {
-            (None, None) => Winner::Tie, // No kings exist, it's a tie
+            (None, None) => Winner::Tie,      // No kings exist, it's a tie
             (Some(_), None) => Winner::White, // Only the black king is missing, white wins
             (None, Some(_)) => Winner::Black, // Only the white king is missing, black wins
             (Some(_), Some(_)) => {
                 // Both kings exist, check for checkmate or stalemate conditions
-                match (white_king_in_check, white_king_has_moves, black_king_in_check, black_king_has_moves) {
+                match (
+                    white_king_in_check,
+                    white_king_has_moves,
+                    black_king_in_check,
+                    black_king_has_moves,
+                ) {
                     (true, false, _, _) => Winner::Black, // White king is in check and has no moves, black wins
                     (_, _, true, false) => Winner::White, // Black king is in check and has no moves, white wins
-                    _ => Winner::NoneYet, // Game continues, no winner yet
+                    _ => Winner::NoneYet,                 // Game continues, no winner yet
                 }
             }
         }
@@ -102,11 +117,11 @@ impl ChessBoard {
         for move_obj in &mut moves {
             // update with type interactions
             let other_piece = self.get_piece(move_obj.to_row, move_obj.to_col);
-            let type_matchup: InteractionType = PokemonType::type_matchup(piece.pokemon_type, other_piece.pokemon_type);
+            let type_matchup: InteractionType =
+                PokemonType::type_matchup(piece.pokemon_type, other_piece.pokemon_type);
             move_obj.type_interaction = Some(type_matchup);
-            
         }
-        
+
         return moves;
     }
 
@@ -118,7 +133,6 @@ impl ChessBoard {
             }
         }
         return filtered_moves;
-
     }
 
     // Separate because the piece does not always cover the captured piece
@@ -153,7 +167,9 @@ impl ChessBoard {
         player: Player,
     ) -> bool {
         let possible_moves = self.possible_moves_for_piece(from_row, from_col, player);
-        possible_moves.iter().any(|pm| pm.to_row == to_row && pm.to_col == to_col)
+        possible_moves
+            .iter()
+            .any(|pm| pm.to_row == to_row && pm.to_col == to_col)
     }
 
     fn find_move(
@@ -172,10 +188,18 @@ impl ChessBoard {
         };
 
         let possible_moves = self.possible_moves_for_piece(from_row, from_col, player);
-        possible_moves.into_iter().find(|m| m.to_row == to_row && m.to_col == to_col)
+        possible_moves
+            .into_iter()
+            .find(|m| m.to_row == to_row && m.to_col == to_col)
     }
 
-    fn execute_move(&self, from_row: usize, from_col: usize, to_row: usize, to_col: usize) -> ChessBoard {
+    fn execute_move(
+        &self,
+        from_row: usize,
+        from_col: usize,
+        to_row: usize,
+        to_col: usize,
+    ) -> ChessBoard {
         let mut new_board = self.clone();
         let piece = self.get_piece(from_row, from_col);
         let move_to_execute = self.find_move(from_row, from_col, to_row, to_col).unwrap(); // assuming find_move is another method returning Option<Move>
@@ -441,25 +465,26 @@ impl ChessBoard {
     }
 
     pub fn get_last_move_interaction_type(&self) -> InteractionType {
-        match self.history.move_history.last(){
+        match self.history.move_history.last() {
             Some(this_move) => this_move.type_interaction.unwrap(),
             _ => InteractionType::Empty,
         }
-
     }
 
-    pub fn select_pawn_promotion_piece(&mut self, piece_str: String, player: Player) -> Result<(), String> {
+    pub fn select_pawn_promotion_piece(
+        &mut self,
+        piece_str: String,
+        player: Player,
+    ) -> Result<(), String> {
         if let Some(location) = self.history.last_move() {
-            let piece_type = ChessPieceType::select_piece_from_string_and_player(&piece_str, player);
+            let piece_type =
+                ChessPieceType::select_piece_from_string_and_player(&piece_str, player);
             self.board[location.to_row][location.to_col] = Piece {
                 piece_type,
                 pokemon_type: self.board[location.to_row][location.to_col].pokemon_type,
             };
-            return Ok(())
-        } 
-        return Err("No last move".to_string())
+            return Ok(());
+        }
+        return Err("No last move".to_string());
     }
-
-
-    
 }

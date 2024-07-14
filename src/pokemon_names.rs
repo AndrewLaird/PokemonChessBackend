@@ -1,4 +1,5 @@
-pub static POKEMON_NAMES: &[&str] = &[ "Bulbasaur",
+pub static POKEMON_NAMES: &[&str] = &[
+    "Bulbasaur",
     "Ivysaur",
     "Venusaur",
     "Charmander",
@@ -1007,5 +1008,5 @@ pub static POKEMON_NAMES: &[&str] = &[ "Bulbasaur",
     "Koraidon",
     "Miraidon",
     "Walking Wake",
-    "Iron Leaves"
+    "Iron Leaves",
 ];

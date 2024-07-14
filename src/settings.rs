@@ -9,41 +9,17 @@ pub struct Settings {
 }
 
 impl Settings {
-    pub fn new() -> Self {
+    pub fn new(
+        simplified_visual: bool,
+        online_play: bool,
+        critical_hits: bool,
+        misses: bool,
+    ) -> Self {
         Settings {
-            simplified_visual: false,
-            online_play: false,
-            critical_hits: false,
-            misses: false,
+            simplified_visual,
+            online_play,
+            critical_hits,
+            misses,
         }
     }
-
-    fn simplified_visual(mut self, value: bool) -> Self {
-        self.simplified_visual = value;
-        self
-    }
-
-    fn online_play(mut self, value: bool) -> Self {
-        self.online_play = value;
-        self
-    }
-
-    fn critical_hits(mut self, value: bool) -> Self {
-        self.critical_hits = value;
-        self
-    }
-
-    fn misses(mut self, value: bool) -> Self {
-        self.misses = value;
-        self
-    }
-}
-
-fn main() {
-    let my_settings = Settings::new()
-        .simplified_visual(true)
-        .online_play(true)
-        .critical_hits(true)
-        .misses(false);
-
 }

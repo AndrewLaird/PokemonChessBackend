@@ -1,4 +1,4 @@
-use crate::chess_structs::{ChessHistory, ChessPieceType, Move, InteractionType};
+use crate::chess_structs::{ChessHistory, ChessPieceType, InteractionType, Move};
 
 // Certain Special Moves need more information
 // en passant needs to know the last move
@@ -122,7 +122,8 @@ impl ChessHistory {
             );
 
             // Check if the move was a two-square advance from the starting position
-            let is_two_square_advance = (last_move.from_row as isize - last_move.to_row as isize).abs() == 2;
+            let is_two_square_advance =
+                (last_move.from_row as isize - last_move.to_row as isize).abs() == 2;
 
             // Check if the pawn has not moved from its original row to qualify for en passant
             let is_initial_move = match last_move.piece_type {
@@ -146,23 +147,30 @@ impl ChessHistory {
      * otherwise returns the position of the piece that made the super effective move
      *
      */
-    pub fn last_move_super_effective(&self) ->  Option<(usize, usize)> {
+    pub fn last_move_super_effective(&self) -> Option<(usize, usize)> {
         if let Some(last_move) = self.move_history.last() {
-            if last_move.type_interaction.unwrap_or(InteractionType::Normal) == InteractionType::SuperEffective {
+            if last_move
+                .type_interaction
+                .unwrap_or(InteractionType::Normal)
+                == InteractionType::SuperEffective
+            {
                 return Some((last_move.to_row, last_move.to_col));
             }
         }
 
         return None;
-
     }
 
     pub fn last_move_requires_pawn_promotion(&self) -> bool {
         if let Some(last_move) = self.move_history.last() {
-            if last_move.piece_type == ChessPieceType::WhitePawn && last_move.to_row == ChessHistory::BLACK_KING_START_ROW {
+            if last_move.piece_type == ChessPieceType::WhitePawn
+                && last_move.to_row == ChessHistory::BLACK_KING_START_ROW
+            {
                 return true;
             }
-            if last_move.piece_type == ChessPieceType::BlackPawn && last_move.to_row == ChessHistory::WHITE_KING_START_ROW {
+            if last_move.piece_type == ChessPieceType::BlackPawn
+                && last_move.to_row == ChessHistory::WHITE_KING_START_ROW
+            {
                 return true;
             }
         }

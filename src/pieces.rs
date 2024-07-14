@@ -1,7 +1,7 @@
-use log::info;
 use crate::chess_structs::{
-    Capture, Castle, ChessBoard, ChessPieceType, Move, Piece, PokemonType, Player, BOARD_SIZE,
+    Capture, Castle, ChessBoard, ChessPieceType, Move, Piece, Player, PokemonType, BOARD_SIZE,
 };
+use log::info;
 
 impl Piece {
     pub fn empty() -> Self {
@@ -63,7 +63,9 @@ impl ChessPieceType {
     }
 
     pub fn is_piece_and_opposite_color(&self, other: ChessPieceType) -> bool {
-        return other != ChessPieceType::Empty && self != &ChessPieceType::Empty && self.is_white() != other.is_white();
+        return other != ChessPieceType::Empty
+            && self != &ChessPieceType::Empty
+            && self.is_white() != other.is_white();
     }
 
     pub fn pawn_moves(&self, row: usize, col: usize, board: &ChessBoard) -> Vec<Move> {
@@ -105,8 +107,7 @@ impl ChessPieceType {
         let to_col_attack_right = (col as i32) + 1;
 
         if Self::is_valid_position(to_row_attack, to_col_attack_left) {
-            let piece = board
-                .get_piece(to_row_attack as usize, to_col_attack_left as usize);
+            let piece = board.get_piece(to_row_attack as usize, to_col_attack_left as usize);
             if piece.piece_type.is_piece_and_opposite_color(*self) {
                 info!("Pawn can capture diagonally left");
                 moves.push(Move {
@@ -127,8 +128,7 @@ impl ChessPieceType {
         }
 
         if Self::is_valid_position(to_row_attack, to_col_attack_right) {
-            let piece = board
-                .get_piece(to_row_attack as usize, to_col_attack_right as usize);
+            let piece = board.get_piece(to_row_attack as usize, to_col_attack_right as usize);
             if piece.piece_type.is_piece_and_opposite_color(*self) {
                 moves.push(Move {
                     piece_type: *self,
@@ -180,12 +180,16 @@ impl ChessPieceType {
         return moves;
     }
 
-
     pub fn en_passant_move(&self, row: usize, col: usize, board: &ChessBoard) -> Vec<Move> {
         let mut moves: Vec<Move> = vec![];
-        let direction = if self == &ChessPieceType::WhitePawn { 1 } else { -1 };
+        let direction = if self == &ChessPieceType::WhitePawn {
+            1
+        } else {
+            -1
+        };
 
-        if let Some((en_passant_row, en_passant_col)) = board.history.last_move_enables_en_passant() {
+        if let Some((en_passant_row, en_passant_col)) = board.history.last_move_enables_en_passant()
+        {
             // Check if the en passant opportunity is on the same row as the pawn and adjacent column
             if en_passant_row == row && (en_passant_col == col + 1 || en_passant_col == col - 1) {
                 // Create the en passant move
@@ -199,7 +203,7 @@ impl ChessPieceType {
                     to_col: target_col as usize,
                     type_interaction: None, // Set this according to your game's rules
                     capture: Some(Capture {
-                        row: row, // Pawn stays on the same row for en passant
+                        row: row,                                    // Pawn stays on the same row for en passant
                         col: en_passant_col, // Pawn captures the one that moved two squares
                         piece: board.get_piece(row, en_passant_col), // Captured pawn
                     }),

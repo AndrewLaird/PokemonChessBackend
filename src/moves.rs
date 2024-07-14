@@ -1,6 +1,4 @@
-use crate::chess_structs::{
-    Move, ChessPieceType, Capture, PokemonType, Piece
-};
+use crate::chess_structs::{Capture, ChessPieceType, Move, Piece, PokemonType};
 
 impl Move {
     // Create a new en passant move. This function assumes that the move is legal

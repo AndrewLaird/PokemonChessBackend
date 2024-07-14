@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::settings::Settings;
+use serde::{Deserialize, Serialize};
 
 pub const BOARD_SIZE: usize = 8;
 pub const WHITE_EN_PASSANT_ROW: usize = 4;
@@ -50,10 +50,8 @@ pub enum Winner {
     White,
     Black,
     Tie,
-    NoneYet
+    NoneYet,
 }
-
-
 
 impl Player {
     pub fn other_player(&self) -> Player {
@@ -62,10 +60,10 @@ impl Player {
             Player::Black => Player::White,
         }
     }
-    pub fn other_player_with_type_interaction(&self, type_interaction: InteractionType) -> Player{
+    pub fn other_player_with_type_interaction(&self, type_interaction: InteractionType) -> Player {
         match type_interaction {
             InteractionType::SuperEffective => *self,
-            _ => self.other_player()
+            _ => self.other_player(),
         }
     }
 }
@@ -119,8 +117,6 @@ pub enum ChessPieceType {
     BlackKing,
 }
 
-
-
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum InteractionType {
     SuperEffective,
@@ -153,48 +149,39 @@ pub enum PokemonType {
     NoType,
 }
 
-impl ChessPieceType{
+impl ChessPieceType {
     /**
      * Used in pawn promotion
      */
-    pub fn select_piece_from_string_and_player(piece_string: &str, player: Player) -> ChessPieceType {
+    pub fn select_piece_from_string_and_player(
+        piece_string: &str,
+        player: Player,
+    ) -> ChessPieceType {
         match piece_string {
-            "Pawn" => {
-                match player {
-                    Player::White => ChessPieceType::WhitePawn,
-                    Player::Black => ChessPieceType::BlackPawn,
-                }
-            }
-            "Knight" => {
-                match player {
-                    Player::White => ChessPieceType::WhiteKnight,
-                    Player::Black => ChessPieceType::BlackKnight,
-                }
-            }
-            "Bishop" => {
-                match player {
-                    Player::White => ChessPieceType::WhiteBishop,
-                    Player::Black => ChessPieceType::BlackBishop,
-                }
-            }
-            "Rook" => {
-                match player {
-                    Player::White => ChessPieceType::WhiteRook,
-                    Player::Black => ChessPieceType::BlackRook,
-                }
-            }
-            "Queen" => {
-                match player {
-                    Player::White => ChessPieceType::WhiteQueen,
-                    Player::Black => ChessPieceType::BlackQueen,
-                }
-            }
-            "King" => {
-                match player {
-                    Player::White => ChessPieceType::WhiteKing,
-                    Player::Black => ChessPieceType::BlackKing,
-                }
-            }
+            "Pawn" => match player {
+                Player::White => ChessPieceType::WhitePawn,
+                Player::Black => ChessPieceType::BlackPawn,
+            },
+            "Knight" => match player {
+                Player::White => ChessPieceType::WhiteKnight,
+                Player::Black => ChessPieceType::BlackKnight,
+            },
+            "Bishop" => match player {
+                Player::White => ChessPieceType::WhiteBishop,
+                Player::Black => ChessPieceType::BlackBishop,
+            },
+            "Rook" => match player {
+                Player::White => ChessPieceType::WhiteRook,
+                Player::Black => ChessPieceType::BlackRook,
+            },
+            "Queen" => match player {
+                Player::White => ChessPieceType::WhiteQueen,
+                Player::Black => ChessPieceType::BlackQueen,
+            },
+            "King" => match player {
+                Player::White => ChessPieceType::WhiteKing,
+                Player::Black => ChessPieceType::BlackKing,
+            },
             _ => ChessPieceType::Empty,
         }
     }

@@ -14,17 +14,16 @@ pub mod chess;
 pub mod chess_history;
 pub mod chess_structs;
 pub mod database;
-pub mod pieces;
-pub mod pokemon_types;
-pub mod pokemon_names;
-pub mod name_generator;
-pub mod settings;
 pub mod messages;
 pub mod moves;
+pub mod name_generator;
+pub mod pieces;
+pub mod pokemon_names;
+pub mod pokemon_types;
+pub mod settings;
 
-
-use crate::chess_structs::{ChessBoard, ChessState, Move, Player, InfoMessage, Winner};
-use crate::database::{load_board, save_board};
+use crate::chess_structs::{ChessBoard, ChessState, InfoMessage, Move, Player, Winner};
+use crate::database::{load_board, save_board, save_settings};
 use crate::name_generator::generate_game_name;
 use crate::settings::Settings;
 use tower_http::cors::CorsLayer;
@@ -39,7 +38,10 @@ async fn main() {
         .route("/start", get(start_game))
         .route("/get_moves", get(get_moves))
         .route("/move_piece", get(move_piece))
-        .route("/select_pawn_promotion_piece", get(select_pawn_promotion_piece))
+        .route(
+            "/select_pawn_promotion_piece",
+            get(select_pawn_promotion_piece),
+        )
         .route("/chessboard", get(get_board))
         .route("/generate_name", get(get_game_name))
         .route("/get_game_state", get(get_game_state))
@@ -61,7 +63,6 @@ pub struct StartGame {
     pub misses: bool,
 }
 
-
 #[derive(Deserialize)]
 pub struct GetGame {
     pub name: String,
@@ -70,24 +71,41 @@ pub struct GetGame {
 async fn start_game(Query(params): Query<StartGame>) -> Json<ChessState> {
     let chessboard = ChessBoard::new();
     let player = Player::White;
-    let settings = Settings::new();
+    let settings = Settings::new(
+        params.simplified_visual,
+        params.online_play,
+        params.critical_hits,
+        params.misses,
+    );
     let winner = chess::Winner::NoneYet;
     let info_message = None;
-    let chess_state = ChessState { chessboard, settings, player, winner, info_message, require_piece_selection:false};
-    let result = save_board(params.name, chess_state.clone()).await;
+    let chess_state = ChessState {
+        chessboard,
+        settings,
+        player,
+        winner,
+        info_message,
+        require_piece_selection: false,
+    };
+    let result = save_board(params.name.clone(), chess_state.clone()).await;
     match result {
         Ok(_) => info!("saved board"),
         Err(_) => info!("failed to save board"),
     }
+    let setting_result = save_settings(params.name.clone(), settings).await;
+    /*match setting_result {*/
+        /*Ok(_) => info!("saved settings"),*/
+        /*Err(_) => info!("failed to save settings"),*/
+    /*}*/
     return Json(chess_state);
 }
 
 async fn get_game_state(Query(params): Query<GetGame>) -> Json<Option<ChessState>> {
     let chess_state = load_board(&params.name).await;
-    return match chess_state{
+    return match chess_state {
         Ok(state) => Json(Some(state)),
-        _ => Json(None)
-    }
+        _ => Json(None),
+    };
 }
 
 // The query parameters for todos index
@@ -123,8 +141,13 @@ pub struct SerializeObject {
     pub result: Option<usize>,
 }
 
-async fn get_valid_moves(chess_state: ChessState, chess_board: ChessBoard, params: GetMoves) -> Vec<Move> {
-    let mut moves = chess_board.possible_moves_for_piece(params.row, params.col, chess_state.player);
+async fn get_valid_moves(
+    chess_state: ChessState,
+    chess_board: ChessBoard,
+    params: GetMoves,
+) -> Vec<Move> {
+    let mut moves =
+        chess_board.possible_moves_for_piece(params.row, params.col, chess_state.player);
     let current_player = chess_state.player.clone();
     let mut valid_moves = Vec::new();
     // check last moveh for super effective moves and if so, only return those that match the
@@ -156,9 +179,8 @@ async fn get_moves(Query(params): Query<GetMoves>) -> Json<Vec<Move>> {
     }
     let chess_board = chess_state.chessboard.clone();
     let valid_moves = get_valid_moves(chess_state, chess_board, params).await;
-    return Json(valid_moves)
+    return Json(valid_moves);
 }
-
 
 #[derive(Serialize)]
 pub struct MoveResponse {
@@ -180,28 +202,40 @@ async fn move_piece(Query(params): Query<UserMove>) -> Json<ChessState> {
     // last move Interaction type
     let last_move_interaction_type = chessboard.get_last_move_interaction_type();
     chess_state.chessboard = chessboard;
-    chess_state.info_message = InfoMessage::get_message_from_interaction_type(last_move_interaction_type);
+    chess_state.info_message =
+        InfoMessage::get_message_from_interaction_type(last_move_interaction_type);
     chess_state.winner = chess_state.chessboard.get_winner();
-    let pawn_promotion = chess_state.chessboard.history.last_move_requires_pawn_promotion();
+    let pawn_promotion = chess_state
+        .chessboard
+        .history
+        .last_move_requires_pawn_promotion();
     chess_state.require_piece_selection = pawn_promotion;
     if !pawn_promotion {
-        chess_state.player = chess_state.player.other_player_with_type_interaction(last_move_interaction_type);
+        chess_state.player = chess_state
+            .player
+            .other_player_with_type_interaction(last_move_interaction_type);
     }
     save_board(name, chess_state.clone()).await.unwrap();
     return Json(chess_state);
 }
 
-async fn select_pawn_promotion_piece(Query(params): Query<SelectPawnPromotionPiece>) -> Json<ChessState> {
+async fn select_pawn_promotion_piece(
+    Query(params): Query<SelectPawnPromotionPiece>,
+) -> Json<ChessState> {
     let name = params.name.clone();
     let original_chess_state = load_board(&name).await.unwrap();
     let mut chess_state: ChessState = original_chess_state.clone();
-    let result = chess_state.chessboard.select_pawn_promotion_piece(params.piece_str.clone(), chess_state.player.clone());
-    if result.is_err(){
+    let result = chess_state
+        .chessboard
+        .select_pawn_promotion_piece(params.piece_str.clone(), chess_state.player.clone());
+    if result.is_err() {
         return Json(original_chess_state);
     }
     chess_state.require_piece_selection = false;
     let last_move_interaction_type = chess_state.chessboard.get_last_move_interaction_type();
-    chess_state.player = chess_state.player.other_player_with_type_interaction(last_move_interaction_type);
+    chess_state.player = chess_state
+        .player
+        .other_player_with_type_interaction(last_move_interaction_type);
     save_board(name, chess_state.clone()).await.unwrap();
     return Json(chess_state);
 }
