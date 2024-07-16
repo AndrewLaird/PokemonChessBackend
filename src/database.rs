@@ -1,4 +1,4 @@
-use crate::chess_structs::{ChessBoard, ChessState};
+use crate::chess_structs::{ChessState};
 use crate::settings::Settings;
 use std::error::Error;
 use tokio::fs::{File, OpenOptions};
@@ -54,21 +54,7 @@ pub async fn save_settings(
     file.write_all(j.as_bytes()).await?;
     file.flush().await?; // Explicitly flush the file buffer
 
-    return Ok(());
-}
-
-pub async fn load_settings(name: &String) -> Result<Settings, Box<dyn std::error::Error>> {
-    let directory = String::from("settings/");
-    let full_path = directory + &name + ".pchess";
-    let mut file = File::open(&full_path).await?;
-
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).await?;
-
-    // Deserialize the JSON string to a ChessState
-    let settings: Settings = serde_json::from_str(&contents)?;
-
-    Ok(settings)
+    Ok(())
 }
 
 pub async fn read_names_from_file() -> Result<Vec<String>, Box<dyn Error>> {

@@ -1,4 +1,4 @@
-use crate::chess_structs::{InfoMessage, InteractionType, Move, Player};
+use crate::chess_structs::{InfoMessage, InteractionType};
 
 impl InfoMessage {
     pub fn get_message_from_interaction_type(

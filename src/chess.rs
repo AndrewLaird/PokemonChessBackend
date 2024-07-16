@@ -137,7 +137,7 @@ impl ChessBoard {
 
     // Separate because the piece does not always cover the captured piece
     // specifically for en passant
-    pub fn capture_piece(&self, capture: Capture, move_to_execute: Move) -> ChessBoard {
+    pub fn capture_piece(&self, capture: Capture, _move_to_execute: Move) -> ChessBoard {
         let mut new_board = self.clone();
         new_board.board[capture.row][capture.col] = Piece::empty();
         return new_board;
@@ -230,27 +230,7 @@ impl ChessBoard {
         }
         new_board.history.add_move(move_to_execute);
         // if a pawn has moved to the end of the board, promote it to a queen
-        new_board.handle_pawn_promotion_if_applicable(&move_to_execute, piece);
-
         new_board
-    }
-
-    fn handle_pawn_promotion_if_applicable(&mut self, move_to_execute: &Move, piece: Piece) {
-        match (move_to_execute.to_row, piece.piece_type) {
-            (7, ChessPieceType::WhitePawn) => {
-                self.board[move_to_execute.to_row][move_to_execute.to_col] = Piece {
-                    piece_type: ChessPieceType::WhiteQueen,
-                    pokemon_type: piece.pokemon_type,
-                };
-            }
-            (0, ChessPieceType::BlackPawn) => {
-                self.board[move_to_execute.to_row][move_to_execute.to_col] = Piece {
-                    piece_type: ChessPieceType::BlackQueen,
-                    pokemon_type: piece.pokemon_type,
-                };
-            }
-            _ => {}
-        }
     }
 
     fn handle_captures_and_special_moves(&mut self, move_to_execute: &Move) {

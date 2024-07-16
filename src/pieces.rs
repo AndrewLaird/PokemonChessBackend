@@ -1,5 +1,5 @@
 use crate::chess_structs::{
-    Capture, Castle, ChessBoard, ChessPieceType, Move, Piece, Player, PokemonType, BOARD_SIZE,
+    Capture, Castle, ChessBoard, ChessPieceType, Move, Piece, PokemonType, BOARD_SIZE,
 };
 use log::info;
 

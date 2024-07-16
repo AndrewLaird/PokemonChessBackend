@@ -1,6 +1,6 @@
 use axum::extract::{Json, Query};
 use axum::{routing::get, Router};
-use log::info;
+use log::{error, info};
 
 use serde::{Deserialize, Serialize};
 
@@ -23,7 +23,7 @@ pub mod pokemon_types;
 pub mod settings;
 
 use crate::chess_structs::{ChessBoard, ChessState, InfoMessage, Move, Player, Winner};
-use crate::database::{load_board, save_board, save_settings};
+use crate::database::{load_board, save_board};
 use crate::name_generator::generate_game_name;
 use crate::settings::Settings;
 use tower_http::cors::CorsLayer;
@@ -57,8 +57,7 @@ async fn main() {
 #[derive(Deserialize)]
 pub struct StartGame {
     pub name: String,
-    pub simplified_visual: bool,
-    pub online_play: bool,
+    pub local_play: bool,
     pub critical_hits: bool,
     pub misses: bool,
 }
@@ -68,12 +67,13 @@ pub struct GetGame {
     pub name: String,
 }
 
+
+
 async fn start_game(Query(params): Query<StartGame>) -> Json<ChessState> {
     let chessboard = ChessBoard::new();
     let player = Player::White;
     let settings = Settings::new(
-        params.simplified_visual,
-        params.online_play,
+        params.local_play,
         params.critical_hits,
         params.misses,
     );
@@ -81,23 +81,22 @@ async fn start_game(Query(params): Query<StartGame>) -> Json<ChessState> {
     let info_message = None;
     let chess_state = ChessState {
         chessboard,
-        settings,
+        settings: settings.clone(),
         player,
         winner,
         info_message,
         require_piece_selection: false,
     };
-    let result = save_board(params.name.clone(), chess_state.clone()).await;
-    match result {
-        Ok(_) => info!("saved board"),
-        Err(_) => info!("failed to save board"),
+
+    // Save the board
+    match save_board(params.name.clone(), chess_state.clone()).await {
+        Ok(_) => info!("Saved board"),
+        Err(e) => {
+            error!("Failed to save board: {:?}", e);
+        }
     }
-    // let setting_result = save_settings(params.name.clone(), settings).await;
-    /*match setting_result {*/
-        /*Ok(_) => info!("saved settings"),*/
-        /*Err(_) => info!("failed to save settings"),*/
-    /*}*/
-    return Json(chess_state);
+
+    Json(chess_state)
 }
 
 async fn get_game_state(Query(params): Query<GetGame>) -> Json<Option<ChessState>> {
