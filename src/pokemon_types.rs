@@ -3,7 +3,6 @@ use rand::seq::SliceRandom;
 use rand::thread_rng;
 use std::fmt;
 
-// all messed up
 impl PokemonType {
     pub fn get_type_chart() -> [[InteractionType; 19]; 19] {
         let type_chart: [[InteractionType; 19]; 19] = [

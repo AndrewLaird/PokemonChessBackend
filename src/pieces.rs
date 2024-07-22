@@ -109,7 +109,6 @@ impl ChessPieceType {
         if Self::is_valid_position(to_row_attack, to_col_attack_left) {
             let piece = board.get_piece(to_row_attack as usize, to_col_attack_left as usize);
             if piece.piece_type.is_piece_and_opposite_color(*self) {
-                info!("Pawn can capture diagonally left");
                 moves.push(Move {
                     piece_type: *self,
                     from_row: row,
@@ -118,7 +117,7 @@ impl ChessPieceType {
                     to_col: to_col_attack_left as usize,
                     type_interaction: None,
                     capture: Some(Capture {
-                        row: to_row_attack as usize,
+                        row: row as usize,
                         col: to_col_attack_left as usize,
                         piece,
                     }),
@@ -138,7 +137,7 @@ impl ChessPieceType {
                     to_col: to_col_attack_right as usize,
                     type_interaction: None,
                     capture: Some(Capture {
-                        row: to_row_attack as usize,
+                        row: row as usize,
                         col: to_col_attack_right as usize,
                         piece,
                     }),
@@ -146,7 +145,6 @@ impl ChessPieceType {
                 });
             }
         }
-
         // check for en passant
         // if there is a pawn to the left or right of the pawn,
         // check the history of the last move to see if it was a pawn moving forward twice
@@ -191,7 +189,10 @@ impl ChessPieceType {
         if let Some((en_passant_row, en_passant_col)) = board.history.last_move_enables_en_passant()
         {
             // Check if the en passant opportunity is on the same row as the pawn and adjacent column
-            if en_passant_row == row && (en_passant_col == col + 1 || en_passant_col == col - 1) {
+            if en_passant_row == row
+                && ((en_passant_col == col.saturating_add(1))
+                    || (col > 0 && en_passant_col == col - 1))
+            {
                 // Create the en passant move
                 let target_row = row as isize + direction;
                 let target_col = en_passant_col as isize; // en passant captures the pawn "in passing"

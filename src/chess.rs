@@ -58,56 +58,42 @@ impl ChessBoard {
 
     pub fn is_king_in_check(&self, player: Player) -> bool {
         let king_position = self.find_king_position(player.clone());
-        // check if any of the other player's pieces are attacking the king
         match king_position {
-            Some(king_position) => self.pieces_attacking_king(king_position, player.clone()),
+            Some(king_position) => self.pieces_attacking_king(king_position, player),
             None => false,
         }
     }
 
-    pub fn get_winner(&self) -> Winner {
-        let white_king_position = self.find_king_position(Player::White);
-        let black_king_position = self.find_king_position(Player::Black);
+    pub fn get_winner(&self, current_player: Player) -> Winner {
+        let opponent = match current_player {
+            Player::White => Player::Black,
+            Player::Black => Player::White,
+        };
 
-        // Check for the existence of kings and determine if they are in check
-        let white_king_in_check =
-            white_king_position.map_or(false, |pos| self.pieces_attacking_king(pos, Player::White));
-        let black_king_in_check =
-            black_king_position.map_or(false, |pos| self.pieces_attacking_king(pos, Player::Black));
+        let current_king_position = self.find_king_position(current_player);
+        let opponent_king_position = self.find_king_position(opponent);
 
-        // Check for available moves for each king
-        let white_king_has_moves = white_king_position.map_or(false, |pos| {
-            !self
-                .possible_moves_for_piece(pos.0, pos.1, Player::White)
-                .is_empty()
-        });
-        let black_king_has_moves = black_king_position.map_or(false, |pos| {
-            !self
-                .possible_moves_for_piece(pos.0, pos.1, Player::Black)
-                .is_empty()
-        });
+        match (current_king_position, opponent_king_position) {
+            (None, None) => Winner::Tie,
+            (Some(_), None) => Winner::from_player(current_player),
+            (None, Some(_)) => Winner::from_player(opponent),
+            (Some(current_king_pos), Some(_)) => {
+                let current_king_in_check = self.pieces_attacking_king(current_king_pos, current_player);
+                let current_king_has_moves = !self
+                    .possible_moves_for_piece_unfiltered(current_king_pos.0, current_king_pos.1, current_player)
+                    .is_empty();
 
-        match (white_king_position, black_king_position) {
-            (None, None) => Winner::Tie,      // No kings exist, it's a tie
-            (Some(_), None) => Winner::White, // Only the black king is missing, white wins
-            (None, Some(_)) => Winner::Black, // Only the white king is missing, black wins
-            (Some(_), Some(_)) => {
-                // Both kings exist, check for checkmate or stalemate conditions
-                match (
-                    white_king_in_check,
-                    white_king_has_moves,
-                    black_king_in_check,
-                    black_king_has_moves,
-                ) {
-                    (true, false, _, _) => Winner::Black, // White king is in check and has no moves, black wins
-                    (_, _, true, false) => Winner::White, // Black king is in check and has no moves, white wins
-                    _ => Winner::NoneYet,                 // Game continues, no winner yet
+                if current_king_in_check && !current_king_has_moves {
+                    Winner::from_player(opponent)
+                } else {
+                    Winner::NoneYet
                 }
             }
         }
     }
 
-    pub fn possible_moves_for_piece(&self, row: usize, col: usize, player: Player) -> Vec<Move> {
+    pub fn possible_moves_for_piece_unfiltered(&self, row: usize, col: usize, player: Player) -> Vec<Move> {
+
         let piece: Piece = self.get_piece(row, col);
         // make sure they are the same type, white or black
         if piece.piece_type.is_white() != (player == Player::White) {
@@ -121,11 +107,19 @@ impl ChessBoard {
                 PokemonType::type_matchup(piece.pokemon_type, other_piece.pokemon_type);
             move_obj.type_interaction = Some(type_matchup);
         }
+        return moves;
+    }
+
+    pub fn possible_moves_for_piece(&self, row: usize, col: usize, player: Player) -> Vec<Move> {
+        let mut moves = self.possible_moves_for_piece_unfiltered(row, col, player);
+        if let Some(position) = self.history.last_move_super_effective() {
+            moves = ChessBoard::filter_moves_if_super_effective(moves, position);
+        }
 
         return moves;
     }
 
-    pub fn filter_moves_if_supereffective(moves: Vec<Move>, position: (usize, usize)) -> Vec<Move> {
+    pub fn filter_moves_if_super_effective(moves: Vec<Move>, position: (usize, usize)) -> Vec<Move> {
         let mut filtered_moves = Vec::new();
         for m in moves {
             if m.from_row == position.0 && m.from_col == position.1 {
@@ -137,10 +131,8 @@ impl ChessBoard {
 
     // Separate because the piece does not always cover the captured piece
     // specifically for en passant
-    pub fn capture_piece(&self, capture: Capture, _move_to_execute: Move) -> ChessBoard {
-        let mut new_board = self.clone();
-        new_board.board[capture.row][capture.col] = Piece::empty();
-        return new_board;
+    pub fn capture_piece(&mut self, capture: Capture, _move_to_execute: Move) {
+        self.board[capture.row][capture.col] = Piece::empty();
     }
 
     pub fn move_piece(
@@ -150,15 +142,14 @@ impl ChessBoard {
         to_row: usize,
         to_col: usize,
         player: Player,
-    ) -> ChessBoard {
+    ) -> (ChessBoard, Option<InteractionType>) {
         if self.is_move_valid(from_row, from_col, to_row, to_col, player) {
-            self.execute_move(from_row, from_col, to_row, to_col)
-        } else {
-            self.clone()
-        }
+            return self.clone().execute_move(from_row, from_col, to_row, to_col);
+        } 
+        return (self.clone(), None);
     }
 
-    fn is_move_valid(
+    pub fn is_move_valid(
         &self,
         from_row: usize,
         from_col: usize,
@@ -188,9 +179,9 @@ impl ChessBoard {
         };
 
         let possible_moves = self.possible_moves_for_piece(from_row, from_col, player);
-        possible_moves
+        return possible_moves
             .into_iter()
-            .find(|m| m.to_row == to_row && m.to_col == to_col)
+            .find(|m| m.to_row == to_row && m.to_col == to_col);
     }
 
     fn execute_move(
@@ -199,10 +190,10 @@ impl ChessBoard {
         from_col: usize,
         to_row: usize,
         to_col: usize,
-    ) -> ChessBoard {
+    ) -> (ChessBoard, Option<InteractionType>) {
         let mut new_board = self.clone();
         let piece = self.get_piece(from_row, from_col);
-        let move_to_execute = self.find_move(from_row, from_col, to_row, to_col).unwrap(); // assuming find_move is another method returning Option<Move>
+        let move_to_execute = self.find_move(from_row, from_col, to_row, to_col).unwrap(); 
 
         // Check the interaction type and handle "Not Very Effective" outcome
         if let Some(type_interaction) = move_to_execute.type_interaction {
@@ -214,6 +205,13 @@ impl ChessBoard {
                 }
                 InteractionType::NoEffect => {
                     // Neither piece is destroyed if the interaction is "No Effect"
+                }
+                InteractionType::SuperEffective => {
+                    // handle the piece normally but don't update the player unless there are no
+                    // available moves for the piece that landed here
+                    new_board.handle_captures_and_special_moves(&move_to_execute);
+                    new_board.board[to_row][to_col] = piece; // Place the attacking piece in the new position
+                    new_board.board[from_row][from_col] = Piece::empty(); // Remove the attacking piece from the old position
                 }
                 _ => {
                     // Handle other types of interactions
@@ -230,7 +228,7 @@ impl ChessBoard {
         }
         new_board.history.add_move(move_to_execute);
         // if a pawn has moved to the end of the board, promote it to a queen
-        new_board
+        return (new_board, move_to_execute.type_interaction);
     }
 
     fn handle_captures_and_special_moves(&mut self, move_to_execute: &Move) {

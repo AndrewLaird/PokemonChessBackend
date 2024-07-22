@@ -24,8 +24,8 @@ pub struct ChessBoard {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChessState {
-    pub chessboard: ChessBoard,
     pub settings: Settings,
+    pub chessboard: ChessBoard,
     pub player: Player,
     pub winner: Winner,
     pub info_message: Option<InfoMessage>,
@@ -35,6 +35,7 @@ pub struct ChessState {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy)]
 pub enum InfoMessage {
     SuperEffective,
+    SuperEffectiveNoMovesAvailable,
     NotVeryEffective,
     NoEffect,
 }
@@ -53,6 +54,15 @@ pub enum Winner {
     NoneYet,
 }
 
+impl Winner {
+    pub fn from_player(player: Player) -> Self {
+        match player {
+            Player::White => Self::White,
+            Player::Black => Self::Black,
+        }
+    }
+}
+
 impl Player {
     pub fn other_player(&self) -> Player {
         match self {
@@ -60,10 +70,16 @@ impl Player {
             Player::Black => Player::White,
         }
     }
-    pub fn other_player_with_type_interaction(&self, type_interaction: InteractionType) -> Player {
-        match type_interaction {
-            InteractionType::SuperEffective => *self,
-            _ => self.other_player(),
+    pub fn other_player_considering_board(&self, chessboard: &ChessBoard) -> Player {
+        let last_move_super_effective = chessboard.history.last_move_super_effective();
+        match last_move_super_effective {
+            Some(_) => {
+                *self
+            }
+            None => {
+                self.other_player()
+            }
+            
         }
     }
 }

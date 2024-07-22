@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
  */
 
 pub mod chess;
+pub mod chess_state;
 pub mod chess_history;
 pub mod chess_structs;
 pub mod database;
@@ -22,6 +23,7 @@ pub mod pokemon_names;
 pub mod pokemon_types;
 pub mod settings;
 
+use crate::chess::InteractionType;
 use crate::chess_structs::{ChessBoard, ChessState, InfoMessage, Move, Player, Winner};
 use crate::database::{load_board, save_board};
 use crate::name_generator::generate_game_name;
@@ -145,18 +147,14 @@ async fn get_valid_moves(
     chess_board: ChessBoard,
     params: GetMoves,
 ) -> Vec<Move> {
-    let mut moves =
+    let moves =
         chess_board.possible_moves_for_piece(params.row, params.col, chess_state.player);
     let current_player = chess_state.player.clone();
     let mut valid_moves = Vec::new();
-    // check last moveh for super effective moves and if so, only return those that match the
-    // location of the piece that last moved
-    if let Some(position) = chess_board.history.last_move_super_effective() {
-        moves = ChessBoard::filter_moves_if_supereffective(moves, position);
-    }
     for m in moves {
         let mut new_board = chess_board.clone();
-        new_board = new_board.move_piece(
+        let mut type_interaction: Option<chess::InteractionType> = None;
+        (new_board, type_interaction) = new_board.move_piece(
             m.from_row,
             m.from_col,
             m.to_row,
@@ -190,31 +188,10 @@ pub struct MoveResponse {
 async fn move_piece(Query(params): Query<UserMove>) -> Json<ChessState> {
     let name = params.name.clone();
     let mut chess_state: ChessState = load_board(&name).await.unwrap();
-    let mut chessboard = chess_state.chessboard.clone();
-    chessboard = chessboard.move_piece(
-        params.from_row,
-        params.from_col,
-        params.to_row,
-        params.to_col,
-        chess_state.player.clone(),
-    );
-    // last move Interaction type
-    let last_move_interaction_type = chessboard.get_last_move_interaction_type();
-    chess_state.chessboard = chessboard;
-    chess_state.info_message =
-        InfoMessage::get_message_from_interaction_type(last_move_interaction_type);
-    chess_state.winner = chess_state.chessboard.get_winner();
-    let pawn_promotion = chess_state
-        .chessboard
-        .history
-        .last_move_requires_pawn_promotion();
-    chess_state.require_piece_selection = pawn_promotion;
-    if !pawn_promotion {
-        chess_state.player = chess_state
-            .player
-            .other_player_with_type_interaction(last_move_interaction_type);
+    let board_changed = chess_state.move_piece(params.from_row, params.from_col, params.to_row, params.to_col);
+    if board_changed {
+        save_board(name, chess_state.clone()).await.unwrap();
     }
-    save_board(name, chess_state.clone()).await.unwrap();
     return Json(chess_state);
 }
 
@@ -231,10 +208,9 @@ async fn select_pawn_promotion_piece(
         return Json(original_chess_state);
     }
     chess_state.require_piece_selection = false;
-    let last_move_interaction_type = chess_state.chessboard.get_last_move_interaction_type();
     chess_state.player = chess_state
         .player
-        .other_player_with_type_interaction(last_move_interaction_type);
+        .other_player_considering_board(&chess_state.chessboard);
     save_board(name, chess_state.clone()).await.unwrap();
     return Json(chess_state);
 }
