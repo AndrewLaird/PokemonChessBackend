@@ -137,7 +137,7 @@ impl ChessPieceType {
                     to_col: to_col_attack_right as usize,
                     type_interaction: None,
                     capture: Some(Capture {
-                        row: row as usize,
+                        row: to_row_attack as usize,
                         col: to_col_attack_right as usize,
                         piece,
                     }),
