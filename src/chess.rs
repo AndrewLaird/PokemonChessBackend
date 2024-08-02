@@ -6,7 +6,7 @@ use rand::thread_rng;
 
 pub const BOARD_SIZE: usize = 8;
 
-pub use crate::chess_structs::{
+use crate::chess_structs::{
     Capture, ChessBoard, ChessHistory, ChessPieceType, InteractionType, Move, Piece, Player,
     PokemonType, Winner,
 };
@@ -16,45 +16,12 @@ impl ChessBoard {
         let board = ChessBoard::initialize_board();
         return board;
     }
-
-    pub fn piece_same_as_player(piece: Piece, player: &Player) -> bool {
-        return piece.piece_type.is_white() == (player == &Player::White);
+    pub fn new_normal_type_only() -> Self {
+        let board = ChessBoard::initialize_board_all_normal();
+        return board;
     }
 
-    pub fn piece_opposite_to_player(piece: Piece, player: &Player) -> bool {
-        return piece.piece_type.is_white() != (player == &Player::White);
-    }
-
-    pub fn find_king_position(&self, player: Player) -> Option<(usize, usize)> {
-        for row in 0..BOARD_SIZE {
-            for col in 0..BOARD_SIZE {
-                let piece = self.get_piece(row, col);
-                if piece.piece_type.is_king() && ChessBoard::piece_same_as_player(piece, &player) {
-                    return Some((row, col));
-                }
-            }
-        }
-        return None;
-    }
-
-    pub fn pieces_attacking_king(&self, king_position: (usize, usize), player: Player) -> bool {
-        for row in 0..BOARD_SIZE {
-            for col in 0..BOARD_SIZE {
-                let piece = self.get_piece(row, col);
-                if ChessBoard::piece_opposite_to_player(piece, &player) {
-                    let moves = piece.piece_type.available_moves(row, col, self);
-                    for piece_move in moves {
-                        if piece_move.to_row == king_position.0
-                            && piece_move.to_col == king_position.1
-                        {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
+    
 
     pub fn is_king_in_check(&self, player: Player) -> bool {
         let king_position = self.find_king_position(player.clone());
@@ -62,6 +29,14 @@ impl ChessBoard {
             Some(king_position) => self.pieces_attacking_king(king_position, player),
             None => false,
         }
+    }
+
+    pub fn last_move_interaction_type(&self) -> Option<InteractionType> {
+        let last_move = self.history.last_move();
+        if let Some(last_move) = last_move {
+            return last_move.type_interaction
+        }
+        return None
     }
 
     pub fn get_winner(&self, current_player: Player) -> Winner {
@@ -92,7 +67,7 @@ impl ChessBoard {
         }
     }
 
-    pub fn possible_moves_for_piece_unfiltered(&self, row: usize, col: usize, player: Player) -> Vec<Move> {
+    fn possible_moves_for_piece_unfiltered(&self, row: usize, col: usize, player: Player) -> Vec<Move> {
 
         let piece: Piece = self.get_piece(row, col);
         // make sure they are the same type, white or black
@@ -119,7 +94,7 @@ impl ChessBoard {
         return moves;
     }
 
-    pub fn filter_moves_if_super_effective(moves: Vec<Move>, position: (usize, usize)) -> Vec<Move> {
+    fn filter_moves_if_super_effective(moves: Vec<Move>, position: (usize, usize)) -> Vec<Move> {
         let mut filtered_moves = Vec::new();
         for m in moves {
             if m.from_row == position.0 && m.from_col == position.1 {
@@ -142,11 +117,11 @@ impl ChessBoard {
         to_row: usize,
         to_col: usize,
         player: Player,
-    ) -> (ChessBoard, Option<InteractionType>) {
+    ) -> ChessBoard {
         if self.is_move_valid(from_row, from_col, to_row, to_col, player) {
             return self.clone().execute_move(from_row, from_col, to_row, to_col);
         } 
-        return (self.clone(), None);
+        return self.clone();
     }
 
     pub fn is_move_valid(
@@ -190,10 +165,11 @@ impl ChessBoard {
         from_col: usize,
         to_row: usize,
         to_col: usize,
-    ) -> (ChessBoard, Option<InteractionType>) {
+    ) -> ChessBoard {
         let mut new_board = self.clone();
         let piece = self.get_piece(from_row, from_col);
         let move_to_execute = self.find_move(from_row, from_col, to_row, to_col).unwrap(); 
+        println!("{:?}", move_to_execute);
 
         // Check the interaction type and handle "Not Very Effective" outcome
         if let Some(type_interaction) = move_to_execute.type_interaction {
@@ -228,36 +204,34 @@ impl ChessBoard {
         }
         new_board.history.add_move(move_to_execute);
         // if a pawn has moved to the end of the board, promote it to a queen
-        return (new_board, move_to_execute.type_interaction);
+        return new_board
     }
 
-    fn handle_captures_and_special_moves(&mut self, move_to_execute: &Move) {
-        self.capture_piece_if_applicable(move_to_execute);
-        self.handle_castling_if_applicable(move_to_execute);
-    }
-
-    fn capture_piece_if_applicable(&mut self, move_to_execute: &Move) {
-        if let Some(capture) = move_to_execute.capture {
-            self.capture_piece(capture, *move_to_execute);
-        }
-    }
-
-    fn handle_castling_if_applicable(&mut self, move_to_execute: &Move) {
-        if let Some(castle) = move_to_execute.castle {
-            self.board[castle.rook_to_row][castle.rook_to_col] =
-                self.get_piece(castle.rook_from_row, castle.rook_from_col);
-            self.board[castle.rook_from_row][castle.rook_from_col] = Piece::empty();
-        }
-    }
 
     pub fn get_piece(&self, row: usize, col: usize) -> Piece {
         return self.board[row][col];
     }
+    // For testing normal chess rules
+    #[allow(dead_code)]
+    fn initialize_board_all_normal() -> Self {
+        let white_types = vec![
+            PokemonType::Normal; 2*BOARD_SIZE
+        ];
 
-    pub fn initialize_board() -> Self {
+        let black_types = vec![
+            PokemonType::Normal; 2*BOARD_SIZE
+        ];
+        let board = Self::create_board_with_types(white_types.clone(), black_types.clone());
+
+        return ChessBoard {
+            board,
+            history: ChessHistory::new(),
+        };
+
+    }
+
+    fn initialize_board() -> Self {
         let mut rng = thread_rng();
-        let empty_piece = Piece::empty();
-        let mut board = [[empty_piece; BOARD_SIZE]; BOARD_SIZE];
 
         // Initialize pieces to a random pokemon type but don't repeat
         let mut white_types = vec![
@@ -284,7 +258,18 @@ impl ChessBoard {
 
         white_types.shuffle(&mut rng);
         black_types.shuffle(&mut rng);
+        let board = Self::create_board_with_types(white_types.clone(), black_types.clone());
 
+
+        ChessBoard {
+            board,
+            history: ChessHistory::new(),
+        }
+    }
+
+    fn create_board_with_types(mut white_types: Vec<PokemonType>, mut black_types: Vec<PokemonType>) -> [[Piece; BOARD_SIZE]; BOARD_SIZE] {
+        let empty_piece = Piece::empty();
+        let mut board = [[empty_piece; BOARD_SIZE]; BOARD_SIZE];
         // Initialize white pieces
         board[0] = [
             Piece {
@@ -368,11 +353,8 @@ impl ChessBoard {
                 pokemon_type: black_types.pop().unwrap(),
             };
         }
-
-        ChessBoard {
-            board,
-            history: ChessHistory::new(),
-        }
+        return board;
+        
     }
 
     fn format_piece(piece: Piece) -> String {
@@ -442,13 +424,6 @@ impl ChessBoard {
         println!();
     }
 
-    pub fn get_last_move_interaction_type(&self) -> InteractionType {
-        match self.history.move_history.last() {
-            Some(this_move) => this_move.type_interaction.unwrap(),
-            _ => InteractionType::Empty,
-        }
-    }
-
     pub fn select_pawn_promotion_piece(
         &mut self,
         piece_str: String,
@@ -464,5 +439,156 @@ impl ChessBoard {
             return Ok(());
         }
         return Err("No last move".to_string());
+    }
+
+    fn piece_same_as_player(piece: Piece, player: &Player) -> bool {
+        return piece.piece_type.is_white() == (player == &Player::White);
+    }
+
+    fn piece_opposite_to_player(piece: Piece, player: &Player) -> bool {
+        return piece.piece_type.is_white() != (player == &Player::White);
+    }
+
+    fn find_king_position(&self, player: Player) -> Option<(usize, usize)> {
+        for row in 0..BOARD_SIZE {
+            for col in 0..BOARD_SIZE {
+                let piece = self.get_piece(row, col);
+                if piece.piece_type.is_king() && ChessBoard::piece_same_as_player(piece, &player) {
+                    return Some((row, col));
+                }
+            }
+        }
+        return None;
+    }
+
+    fn pieces_attacking_king(&self, king_position: (usize, usize), player: Player) -> bool {
+        for row in 0..BOARD_SIZE {
+            for col in 0..BOARD_SIZE {
+                let piece = self.get_piece(row, col);
+                if ChessBoard::piece_opposite_to_player(piece, &player) {
+                    let moves = piece.piece_type.available_moves(row, col, self);
+                    for piece_move in moves {
+                        if piece_move.to_row == king_position.0
+                            && piece_move.to_col == king_position.1
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    fn handle_captures_and_special_moves(&mut self, move_to_execute: &Move) {
+        self.capture_piece_if_applicable(move_to_execute);
+        self.handle_castling_if_applicable(move_to_execute);
+    }
+
+    fn capture_piece_if_applicable(&mut self, move_to_execute: &Move) {
+        if let Some(capture) = move_to_execute.capture {
+            self.capture_piece(capture, *move_to_execute);
+        }
+    }
+
+    fn handle_castling_if_applicable(&mut self, move_to_execute: &Move) {
+        if let Some(castle) = move_to_execute.castle {
+            self.board[castle.rook_to_row][castle.rook_to_col] =
+                self.get_piece(castle.rook_from_row, castle.rook_from_col);
+            self.board[castle.rook_from_row][castle.rook_from_col] = Piece::empty();
+        }
+    }
+}
+
+// Tests
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_history_castling_success() {
+        // move white pieces out of the way so the king can castle king-side
+        let mut board = ChessBoard::new_normal_type_only();
+        // Move pawn so the bishop can move
+        board = board.move_piece(1, 4, 3, 4, Player::White);
+        // move the bishop out of the way
+        board = board.move_piece(0, 5, 1, 4, Player::White);
+        // move the knight out of the way
+        board = board.move_piece(0, 6, 2, 5, Player::White);
+        // castle the king
+        board = board.move_piece(0, 4, 0, 6, Player::White);
+        // assert that 0, 6 is the white king
+        assert!(board.get_piece(0, 6).piece_type == ChessPieceType::WhiteKing);
+        // and 0, 5 is the white rook
+        assert!(board.get_piece(0, 5).piece_type == ChessPieceType::WhiteRook);
+    }
+
+    #[test]
+    fn test_history_castling_unsucessful_rook_moved() {
+        // Same scenario as above but we move the rook out and back to it's position
+        // making the castle invalid, and we should see that it's invalid 
+        let mut board = ChessBoard::new_normal_type_only();
+        // Move pawn so the bishop can move
+        board = board.move_piece(1, 4, 3, 4, Player::White);
+        // move the bishop out of the way
+        board = board.move_piece(0, 5, 1, 4, Player::White);
+        // move the knight out of the way
+        board = board.move_piece(0, 6, 2, 5, Player::White);
+        // move the rook next to the king and then back
+        board = board.move_piece(0, 7, 0, 5, Player::White);
+        board = board.move_piece(0, 5, 0, 7, Player::White);
+
+        // Try to castle the king
+        board = board.move_piece(0, 4, 0, 6, Player::White);
+        // see that the king is still the same spot because the castling is invalid
+        assert!(board.get_piece(0, 4).piece_type == ChessPieceType::WhiteKing);
+
+    }
+
+    #[test]
+    fn test_valid_en_passant() {
+        let mut board = ChessBoard::new_normal_type_only();
+        
+        // Move white pawn to set up en passant
+        board = board.move_piece(1, 4, 3, 4, Player::White);
+        board = board.move_piece(3, 4, 4, 4, Player::White);
+        
+        // Move black pawn two squares forward, enabling en passant
+        board = board.move_piece(6, 3, 4, 3, Player::Black);
+        
+        // take the en_passant, esnure the black pawn is no longer there
+        println!("{}", board.display_board_str());
+        board = board.move_piece(4, 4, 5, 3, Player::White);
+        println!("{}", board.display_board_str());
+        assert!(board.get_piece(4, 3).piece_type == ChessPieceType::Empty);
+        
+    }
+
+    #[test]
+    fn test_invalid_en_passant_with_piece_to_left() {
+        let mut board = ChessBoard::new_normal_type_only();
+        
+        // Move white pawn to set up the scenario
+        board = board.move_piece(1, 4, 3, 4, Player::White);
+        board = board.move_piece(3, 4, 4, 4, Player::White);
+        
+        // Move black pawn one square forward (not enabling en passant)
+        board = board.move_piece(6, 3, 5, 3, Player::Black);
+        
+        // Move a black piece to the left of the white pawn
+        board = board.move_piece(7, 0, 4, 3, Player::Black);
+
+        // Capture diagonally with the white pawn making sure that the pieces that should be are
+        // still there
+        board = board.move_piece(4, 4, 5, 3, Player::White);
+        board = board.move_piece(5, 3, 6, 2, Player::White);
+        board = board.move_piece(6, 2, 7, 1, Player::White);
+        println!("{}", board.display_board_str());
+        
+        
+        // Verify that we didn't capture the black pawn that was in front of the piece we did
+        // capture
+        assert!(matches!(board.get_piece(6, 1).piece_type, ChessPieceType::BlackPawn));
     }
 }

@@ -117,7 +117,7 @@ impl ChessPieceType {
                     to_col: to_col_attack_left as usize,
                     type_interaction: None,
                     capture: Some(Capture {
-                        row: row as usize,
+                        row: to_row_attack as usize,
                         col: to_col_attack_left as usize,
                         piece,
                     }),
@@ -214,36 +214,6 @@ impl ChessPieceType {
         }
 
         moves
-    }
-
-    pub fn get_valid_en_passant(
-        row: usize,
-        col: usize,
-        pawn_row: usize,
-        pawn_col: usize,
-        direction: i32,
-        board: &ChessBoard,
-    ) -> Vec<Move> {
-        // Simply check if this pawn moved twice last turn
-        // and construct the move
-        if board.history.pawn_moved_last_turn(pawn_row, pawn_col) {
-            return vec![Move {
-                piece_type: ChessPieceType::WhitePawn,
-                from_row: row,
-                from_col: col,
-                to_row: row + direction as usize,
-                to_col: pawn_col,
-                type_interaction: None,
-                capture: Some(Capture {
-                    row: pawn_row,
-                    col: pawn_col,
-                    piece: board.get_piece(pawn_row, pawn_col),
-                }),
-                castle: None,
-            }];
-        } else {
-            return vec![];
-        }
     }
 
     pub fn get_valid_or_empty(row: i32, col: i32, board: &ChessBoard) -> Option<ChessPieceType> {

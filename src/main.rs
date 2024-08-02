@@ -23,8 +23,7 @@ pub mod pokemon_names;
 pub mod pokemon_types;
 pub mod settings;
 
-use crate::chess::InteractionType;
-use crate::chess_structs::{ChessBoard, ChessState, InfoMessage, Move, Player, Winner};
+use crate::chess_structs::{ChessBoard, ChessState, Move, Player, Winner};
 use crate::database::{load_board, save_board};
 use crate::name_generator::generate_game_name;
 use crate::settings::Settings;
@@ -72,23 +71,12 @@ pub struct GetGame {
 
 
 async fn start_game(Query(params): Query<StartGame>) -> Json<ChessState> {
-    let chessboard = ChessBoard::new();
-    let player = Player::White;
     let settings = Settings::new(
         params.local_play,
         params.critical_hits,
         params.misses,
     );
-    let winner = chess::Winner::NoneYet;
-    let info_message = None;
-    let chess_state = ChessState {
-        chessboard,
-        settings: settings.clone(),
-        player,
-        winner,
-        info_message,
-        require_piece_selection: false,
-    };
+    let chess_state = ChessState::new(settings.clone());
 
     // Save the board
     match save_board(params.name.clone(), chess_state.clone()).await {
@@ -142,31 +130,10 @@ pub struct SerializeObject {
     pub result: Option<usize>,
 }
 
-async fn get_valid_moves(
-    chess_state: ChessState,
-    chess_board: ChessBoard,
-    params: GetMoves,
-) -> Vec<Move> {
-    let moves =
-        chess_board.possible_moves_for_piece(params.row, params.col, chess_state.player);
-    let current_player = chess_state.player.clone();
-    let mut valid_moves = Vec::new();
-    for m in moves {
-        let mut new_board = chess_board.clone();
-        let mut type_interaction: Option<chess::InteractionType> = None;
-        (new_board, type_interaction) = new_board.move_piece(
-            m.from_row,
-            m.from_col,
-            m.to_row,
-            m.to_col,
-            chess_state.player,
-        );
-        if !new_board.is_king_in_check(current_player) {
-            new_board.display_board();
-            valid_moves.push(m);
-        }
-    }
-    valid_moves
+#[derive(Serialize)]
+pub struct MoveResponse {
+    pub is_valid: bool,
+    pub chess_state: ChessState,
 }
 
 async fn get_moves(Query(params): Query<GetMoves>) -> Json<Vec<Move>> {
@@ -174,16 +141,11 @@ async fn get_moves(Query(params): Query<GetMoves>) -> Json<Vec<Move>> {
     if chess_state.winner != Winner::NoneYet {
         return Json(vec![]);
     }
-    let chess_board = chess_state.chessboard.clone();
-    let valid_moves = get_valid_moves(chess_state, chess_board, params).await;
+    let valid_moves = chess_state.get_valid_moves(params.row, params.col);
     return Json(valid_moves);
 }
 
-#[derive(Serialize)]
-pub struct MoveResponse {
-    pub is_valid: bool,
-    pub chess_state: ChessState,
-}
+
 
 async fn move_piece(Query(params): Query<UserMove>) -> Json<ChessState> {
     let name = params.name.clone();

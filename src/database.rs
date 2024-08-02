@@ -1,4 +1,4 @@
-use crate::chess_structs::{ChessState};
+use crate::chess_structs::ChessState;
 use crate::settings::Settings;
 use std::error::Error;
 use tokio::fs::{File, OpenOptions};

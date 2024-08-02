@@ -13,7 +13,14 @@ pub struct Piece {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChessHistory {
-    pub move_history: Vec<Move>,
+    pub last_move: Option<Move>,
+    pub has_white_king_moved: bool,
+    pub has_black_king_moved: bool,
+    pub has_white_queen_side_rook_moved: bool,
+    pub has_white_king_side_rook_moved: bool,
+    pub has_black_queen_side_rook_moved: bool,
+    pub has_black_king_side_rook_moved: bool,
+
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -30,6 +37,7 @@ pub struct ChessState {
     pub winner: Winner,
     pub info_message: Option<InfoMessage>,
     pub require_piece_selection: bool,
+    pub turn_count: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Copy)]
