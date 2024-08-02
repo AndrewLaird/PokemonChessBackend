@@ -98,7 +98,6 @@ impl ChessState {
                 self.player,
             );
             if !new_board.is_king_in_check(current_player) {
-                new_board.display_board();
                 valid_moves.push(m);
             }
         }

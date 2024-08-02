@@ -1,5 +1,5 @@
 use crate::chess_structs::{
-    Capture, Castle, ChessBoard, ChessPieceType, Move, Piece, PokemonType, BOARD_SIZE,
+    Capture, Castle, ChessBoard, ChessPieceType, Move, Piece, PokemonType, BOARD_SIZE, Player
 };
 use log::info;
 
@@ -18,7 +18,7 @@ impl ChessPieceType {
         let col_valid: bool = to_col >= 0 && to_col < BOARD_SIZE as i32;
         return row_valid && col_valid;
     }
-    pub fn available_moves(&self, row: usize, col: usize, board: &ChessBoard) -> Vec<Move> {
+    pub fn available_moves(&self, row: usize, col: usize, board: &ChessBoard, only_capture_moves: bool) -> Vec<Move> {
         match self {
             ChessPieceType::WhitePawn | ChessPieceType::BlackPawn => {
                 return self.pawn_moves(row, col, &board);
@@ -36,11 +36,29 @@ impl ChessPieceType {
                 return self.queen_moves(row, col, board);
             }
             ChessPieceType::WhiteKing | ChessPieceType::BlackKing => {
-                return self.king_moves(row, col, board);
+                return self.king_moves(row, col, board, only_capture_moves);
             }
             _ => {
                 return vec![];
             }
+        }
+    }
+    pub fn get_piece_player(&self)-> Player {
+        match self {
+            ChessPieceType::WhitePawn
+            | ChessPieceType::WhiteKnight
+            | ChessPieceType::WhiteBishop
+            | ChessPieceType::WhiteRook
+            | ChessPieceType::WhiteQueen
+            | ChessPieceType::WhiteKing => Player::White,
+            ChessPieceType::BlackPawn
+            | ChessPieceType::BlackKnight
+            | ChessPieceType::BlackBishop
+            | ChessPieceType::BlackRook
+            | ChessPieceType::BlackQueen
+            | ChessPieceType::BlackKing => Player::Black,
+            // not a piece, should not be possible
+            _ => Player::White
         }
     }
 
@@ -404,7 +422,7 @@ impl ChessPieceType {
         moves
     }
 
-    pub fn king_moves(&self, row: usize, col: usize, board: &ChessBoard) -> Vec<Move> {
+    pub fn king_moves(&self, row: usize, col: usize, board: &ChessBoard, only_capture_moves: bool) -> Vec<Move> {
         let mut moves: Vec<Move> = vec![];
 
         // The king can move one square in any direction:
@@ -444,59 +462,40 @@ impl ChessPieceType {
         }
 
         // check for castling
-        if board.history.can_castle_kingside(self.is_white()) {
-            // check if the squares between the king and rook are empty
-            let mut empty = true;
-            for col in 5..7 {
-                if board.get_piece(row, col).piece_type != ChessPieceType::Empty {
-                    empty = false;
-                    break;
-                }
-            }
-            if empty {
-                moves.push(Move {
-                    piece_type: *self,
-                    from_row: row,
-                    from_col: col,
-                    to_row: row,
-                    to_col: col + 2,
-                    type_interaction: None,
-                    capture: None,
-                    castle: Some(Castle {
-                        rook_from_row: row,
-                        rook_from_col: 7,
-                        rook_to_row: row,
-                        rook_to_col: 5,
-                    }),
-                });
-            }
+        // make sure there aren't any loops here
+        if !only_capture_moves && board.can_castle_kingside(row, self.get_piece_player()) {
+            moves.push(Move {
+                piece_type: *self,
+                from_row: row,
+                from_col: col,
+                to_row: row,
+                to_col: col + 2,
+                type_interaction: None,
+                capture: None,
+                castle: Some(Castle {
+                    rook_from_row: row,
+                    rook_from_col: 7,
+                    rook_to_row: row,
+                    rook_to_col: 5,
+                }),
+            });
         }
-        if board.history.can_castle_queenside(self.is_white()) {
-            // check if the squares between the king and rook are empty
-            let mut empty = true;
-            for col in 1..4 {
-                if board.get_piece(row, col).piece_type != ChessPieceType::Empty {
-                    empty = false;
-                    break;
-                }
-            }
-            if empty {
-                moves.push(Move {
-                    piece_type: *self,
-                    from_row: row,
-                    from_col: col,
-                    to_row: row,
-                    to_col: col - 2,
-                    type_interaction: None,
-                    capture: None,
-                    castle: Some(Castle {
-                        rook_from_row: row,
-                        rook_from_col: 0,
-                        rook_to_row: row,
-                        rook_to_col: 3,
-                    }),
-                });
-            }
+        if !only_capture_moves && board.can_castle_queenside(row, self.get_piece_player()) {
+            moves.push(Move {
+                piece_type: *self,
+                from_row: row,
+                from_col: col,
+                to_row: row,
+                to_col: col - 2,
+                type_interaction: None,
+                capture: None,
+                castle: Some(Castle {
+                    rook_from_row: row,
+                    rook_from_col: 0,
+                    rook_to_row: row,
+                    rook_to_col: 3,
+                }),
+            });
         }
         moves
     }

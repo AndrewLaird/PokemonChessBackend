@@ -7,7 +7,7 @@ use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 pub async fn save_board(name: String, board: ChessState) -> Result<(), Box<dyn std::error::Error>> {
     let directory = String::from("games/");
     let full_path = directory + &name + ".pchess";
-    println!("Saving: {}", board.chessboard.display_board_str());
+    println!("Saving: \n{}", board.chessboard.display_board_str());
     println!("Saving to: {}", full_path);
 
     let mut file = File::create(&full_path).await?;
