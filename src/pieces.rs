@@ -1,5 +1,5 @@
 use crate::chess_structs::{
-    Capture, Castle, ChessBoard, ChessPieceType, Move, Piece, PokemonType, BOARD_SIZE, Player
+    Capture, Castle, ChessBoard, ChessPieceType, Move, Piece, Player, PokemonType, BOARD_SIZE,
 };
 use log::info;
 
@@ -18,7 +18,13 @@ impl ChessPieceType {
         let col_valid: bool = to_col >= 0 && to_col < BOARD_SIZE as i32;
         return row_valid && col_valid;
     }
-    pub fn available_moves(&self, row: usize, col: usize, board: &ChessBoard, only_capture_moves: bool) -> Vec<Move> {
+    pub fn available_moves(
+        &self,
+        row: usize,
+        col: usize,
+        board: &ChessBoard,
+        only_capture_moves: bool,
+    ) -> Vec<Move> {
         match self {
             ChessPieceType::WhitePawn | ChessPieceType::BlackPawn => {
                 return self.pawn_moves(row, col, &board);
@@ -43,7 +49,7 @@ impl ChessPieceType {
             }
         }
     }
-    pub fn get_piece_player(&self)-> Player {
+    pub fn get_piece_player(&self) -> Player {
         match self {
             ChessPieceType::WhitePawn
             | ChessPieceType::WhiteKnight
@@ -58,7 +64,7 @@ impl ChessPieceType {
             | ChessPieceType::BlackQueen
             | ChessPieceType::BlackKing => Player::Black,
             // not a piece, should not be possible
-            _ => Player::White
+            _ => Player::White,
         }
     }
 
@@ -422,7 +428,13 @@ impl ChessPieceType {
         moves
     }
 
-    pub fn king_moves(&self, row: usize, col: usize, board: &ChessBoard, only_capture_moves: bool) -> Vec<Move> {
+    pub fn king_moves(
+        &self,
+        row: usize,
+        col: usize,
+        board: &ChessBoard,
+        only_capture_moves: bool,
+    ) -> Vec<Move> {
         let mut moves: Vec<Move> = vec![];
 
         // The king can move one square in any direction:

@@ -19,7 +19,6 @@ pub struct ChessHistory {
     pub has_white_king_side_rook_moved: bool,
     pub has_black_queen_side_rook_moved: bool,
     pub has_black_king_side_rook_moved: bool,
-
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -27,8 +26,6 @@ pub struct ChessBoard {
     pub board: [[Piece; BOARD_SIZE]; BOARD_SIZE],
     pub history: ChessHistory,
 }
-
-
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChessState {
@@ -81,13 +78,8 @@ impl Player {
     pub fn other_player_considering_board(&self, chessboard: &ChessBoard) -> Player {
         let last_move_super_effective = chessboard.history.last_move_super_effective();
         match last_move_super_effective {
-            Some(_) => {
-                *self
-            }
-            None => {
-                self.other_player()
-            }
-            
+            Some(_) => *self,
+            None => self.other_player(),
         }
     }
 }

@@ -8,11 +8,7 @@ pub struct Settings {
 }
 
 impl Settings {
-    pub fn new(
-        local_play: bool,
-        critical_hits: bool,
-        misses: bool,
-    ) -> Self {
+    pub fn new(local_play: bool, critical_hits: bool, misses: bool) -> Self {
         Settings {
             local_play,
             critical_hits,

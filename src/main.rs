@@ -24,8 +24,8 @@ pub mod pokemon_names;
 pub mod pokemon_types;
 pub mod settings;
 
-use crate::chess_structs::{ChessState, Move, Winner};
 use crate::chess_state_history::ChessStateHistory;
+use crate::chess_structs::{ChessState, Move, Winner};
 use crate::game::Game;
 use crate::name_generator::generate_game_name;
 use crate::settings::Settings;
@@ -71,22 +71,12 @@ pub struct GetGame {
     pub name: String,
 }
 
-
-
 async fn start_game(Query(params): Query<StartGame>) -> Json<ChessState> {
-    let settings = Settings::new(
-        params.local_play,
-        params.critical_hits,
-        params.misses,
-    );
+    let settings = Settings::new(params.local_play, params.critical_hits, params.misses);
     let chess_state = ChessState::new();
     let chess_state_history = ChessStateHistory::new_with_initial_state(chess_state.clone());
     let name = params.name.clone();
-    let game = Game::new(
-        name,
-        settings,
-        chess_state_history,
-    );
+    let game = Game::new(name, settings, chess_state_history);
 
     // Save the board
     if game.save().await {
@@ -151,12 +141,15 @@ async fn get_moves(Query(params): Query<GetMoves>) -> Json<Vec<Move>> {
     return Json(valid_moves);
 }
 
-
-
 async fn move_piece(Query(params): Query<UserMove>) -> Json<ChessState> {
     let name = params.name.clone();
     let mut game = Game::load(&name).await;
-    let board_changed = game.move_piece(params.from_row, params.from_col, params.to_row, params.to_col);
+    let board_changed = game.move_piece(
+        params.from_row,
+        params.from_col,
+        params.to_row,
+        params.to_col,
+    );
     if board_changed {
         game.save().await;
     }

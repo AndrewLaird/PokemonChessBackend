@@ -12,7 +12,7 @@ impl ChessHistory {
 
     pub fn new() -> Self {
         return ChessHistory {
-            last_move: None, 
+            last_move: None,
             has_white_king_moved: false,
             has_black_king_moved: false,
             has_white_queen_side_rook_moved: false,

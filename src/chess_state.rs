@@ -1,6 +1,7 @@
-use crate::chess_structs::{ChessState, InfoMessage, InteractionType, Move, ChessBoard, Player, Winner};
+use crate::chess_structs::{
+    ChessBoard, ChessState, InfoMessage, InteractionType, Move, Player, Winner,
+};
 use crate::settings::Settings;
-
 
 /**
  * Main Difference between chess_state and chess_board
@@ -58,14 +59,15 @@ impl ChessState {
         let pawn_promotion = self.chessboard.history.last_move_requires_pawn_promotion();
         if is_super_effective {
             // check if the piece has moves available
-            let moves = self.chessboard.possible_moves_for_piece(to_row, to_col, self.player.clone());
+            let moves =
+                self.chessboard
+                    .possible_moves_for_piece(to_row, to_col, self.player.clone());
             if moves.is_empty() && !pawn_promotion {
                 // flip it over to the other player and update the info message to match
                 self.player = self.player.other_player();
                 moves_available = false;
             }
-        }
-        else {
+        } else {
             if !pawn_promotion {
                 self.player = self.player.other_player();
             }
@@ -83,24 +85,20 @@ impl ChessState {
     }
 
     pub fn get_valid_moves(&self, row: usize, col: usize) -> Vec<Move> {
-        let moves =
-                self.chessboard.possible_moves_for_piece(row, col, self.player);
+        let moves = self
+            .chessboard
+            .possible_moves_for_piece(row, col, self.player);
         let current_player = self.player.clone();
         let mut valid_moves = Vec::new();
         for m in moves {
             let mut new_board = self.chessboard.clone();
-            new_board = new_board.move_piece(
-                m.from_row,
-                m.from_col,
-                m.to_row,
-                m.to_col,
-                self.player,
-            );
+            new_board =
+                new_board.move_piece(m.from_row, m.from_col, m.to_row, m.to_col, self.player);
             if !new_board.is_king_in_check(current_player) {
                 valid_moves.push(m);
             }
         }
-        return valid_moves
+        return valid_moves;
     }
 
     pub fn other_player_considering_board(&mut self) -> Player {
@@ -108,7 +106,9 @@ impl ChessState {
     }
 
     pub fn select_pawn_promotion_piece(&mut self, piece_str: String) -> Result<(), String> {
-        let result = self.chessboard.select_pawn_promotion_piece(piece_str, self.player);
+        let result = self
+            .chessboard
+            .select_pawn_promotion_piece(piece_str, self.player);
         if result.is_err() {
             return Err(result.unwrap_err());
         }

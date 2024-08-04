@@ -7,7 +7,9 @@ impl InfoMessage {
     ) -> Option<InfoMessage> {
         match (interaction_type, moves_available) {
             (InteractionType::SuperEffective, true) => Some(InfoMessage::SuperEffective),
-            (InteractionType::SuperEffective, false) => Some(InfoMessage::SuperEffectiveNoMovesAvailable),
+            (InteractionType::SuperEffective, false) => {
+                Some(InfoMessage::SuperEffectiveNoMovesAvailable)
+            }
             (InteractionType::NoEffect, _) => Some(InfoMessage::NoEffect),
             (InteractionType::NotVeryEffective, _) => Some(InfoMessage::NotVeryEffective),
             _ => None,
