@@ -1,4 +1,3 @@
-use crate::settings::Settings;
 use serde::{Deserialize, Serialize};
 
 pub const BOARD_SIZE: usize = 8;
@@ -29,9 +28,10 @@ pub struct ChessBoard {
     pub history: ChessHistory,
 }
 
+
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChessState {
-    pub settings: Settings,
     pub chessboard: ChessBoard,
     pub player: Player,
     pub winner: Winner,

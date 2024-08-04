@@ -19,4 +19,8 @@ impl Settings {
             misses,
         }
     }
+
+    pub fn default() -> Self {
+        Settings::new(false, false, false)
+    }
 }

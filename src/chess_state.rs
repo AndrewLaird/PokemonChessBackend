@@ -9,14 +9,13 @@ use crate::settings::Settings;
  *
  */
 impl ChessState {
-    pub fn new(settings: Settings) -> Self {
+    pub fn new() -> Self {
         let chessboard = ChessBoard::new();
         let player = Player::White;
         let winner = Winner::NoneYet;
         let info_message = None;
         let chess_state = ChessState {
             chessboard,
-            settings: settings.clone(),
             player,
             winner,
             info_message,
@@ -103,6 +102,20 @@ impl ChessState {
         }
         return valid_moves
     }
+
+    pub fn other_player_considering_board(&mut self) -> Player {
+        return self.player.other_player_considering_board(&self.chessboard);
+    }
+
+    pub fn select_pawn_promotion_piece(&mut self, piece_str: String) -> Result<(), String> {
+        let result = self.chessboard.select_pawn_promotion_piece(piece_str, self.player);
+        if result.is_err() {
+            return Err(result.unwrap_err());
+        }
+        self.player = self.other_player_considering_board();
+        self.require_piece_selection = false;
+        return Ok(());
+    }
 }
 
 // add a quick test on get_valid_moves for the first pawn
@@ -112,7 +125,7 @@ mod tests {
 
     #[test]
     fn test_get_valid_moves() {
-        let chess_state = ChessState::new(Settings::new(false, false, false));
+        let chess_state = ChessState::new();
         let valid_moves = chess_state.get_valid_moves(1, 0);
         assert!(valid_moves.len() == 2);
         assert!(valid_moves[0].to_row == 2);

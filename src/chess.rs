@@ -24,7 +24,9 @@ impl ChessBoard {
     pub fn is_king_in_check(&self, player: Player) -> bool {
         let king_position = self.find_king_position(player.clone());
         match king_position {
-            Some(king_position) => self.location_under_attack(king_position.0, king_position.1, player),
+            Some(king_position) => {
+                self.location_under_attack(king_position.0, king_position.1, player)
+            }
             None => false,
         }
     }
@@ -51,8 +53,11 @@ impl ChessBoard {
             (Some(_), None) => Winner::from_player(current_player),
             (None, Some(_)) => Winner::from_player(opponent),
             (Some(current_king_pos), Some(_)) => {
-                let current_king_in_check =
-                    self.location_under_attack(current_king_pos.0, current_king_pos.1, current_player);
+                let current_king_in_check = self.location_under_attack(
+                    current_king_pos.0,
+                    current_king_pos.1,
+                    current_player,
+                );
                 let current_king_has_moves = !self
                     .possible_moves_for_piece_unfiltered(
                         current_king_pos.0,
@@ -83,7 +88,9 @@ impl ChessBoard {
         if piece.piece_type.is_white() != (player == Player::White) {
             return vec![];
         }
-        let mut moves = piece.piece_type.available_moves(row, col, self, only_capture_moves);
+        let mut moves = piece
+            .piece_type
+            .available_moves(row, col, self, only_capture_moves);
         for move_obj in &mut moves {
             // update with type interactions
             let other_piece = self.get_piece(move_obj.to_row, move_obj.to_col);
