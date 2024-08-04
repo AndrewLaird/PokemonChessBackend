@@ -64,13 +64,13 @@ impl Game {
         return Ok(());
     }
 
-    pub fn get_previous_state(&mut self) -> ChessState {
+    pub fn get_previous_state(&mut self) -> Option<ChessState> {
         // if we have a previous state, return it
         // otherwise return current state
         return self.chess_state_history.get_previous_state();
     }
 
-    pub fn get_next_state(&mut self) -> ChessState {
+    pub fn get_next_state(&mut self) -> Option<ChessState> {
         return self.chess_state_history.get_next_state();
     }
 }

@@ -177,3 +177,11 @@ async fn get_game_name() -> Json<String> {
     let name = generate_game_name().await.unwrap();
     return Json(name);
 }
+
+async fn get_previous_state(Query(params): Query<GetGame>) -> Json<ChessState> {
+    let mut game = Game::load(&params.name).await;
+    if !game.get_previous_state().is_none() {
+        game.save().await;
+    }
+    return Json(game.get_previous_state().unwrap());
+}

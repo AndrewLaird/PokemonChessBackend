@@ -14,4 +14,5 @@ rand = "0.8.5"
 serde = { version = "1.0.188", features = ["derive"] }
 serde_json = "1.0.105"
 tokio = { version = "1.32.0", features = ["full"] }
+tokio-tungstenite = "0.23.1"
 tower-http = { version = "0.4.3", features = ["cors"] }
