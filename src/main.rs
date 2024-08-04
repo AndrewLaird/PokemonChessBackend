@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 /***
  * Current todo:
  * Undo button
- * Selection of piece for pawn promotion
  */
 
 pub mod chess;
@@ -23,7 +22,7 @@ pub mod pokemon_names;
 pub mod pokemon_types;
 pub mod settings;
 
-use crate::chess_structs::{ChessBoard, ChessState, Move, Player, Winner};
+use crate::chess_structs::{ChessState, Move, Winner};
 use crate::database::{load_board, save_board};
 use crate::name_generator::generate_game_name;
 use crate::settings::Settings;
@@ -36,16 +35,17 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(root))
+        // can be kept as static
         .route("/start", get(start_game))
+        .route("/generate_name", get(get_game_name))
+        .route("/get_game_state", get(get_game_state))
+        // should be made into websocket connections
         .route("/get_moves", get(get_moves))
         .route("/move_piece", get(move_piece))
         .route(
             "/select_pawn_promotion_piece",
             get(select_pawn_promotion_piece),
         )
-        .route("/chessboard", get(get_board))
-        .route("/generate_name", get(get_game_name))
-        .route("/get_game_state", get(get_game_state))
         .layer(CorsLayer::permissive());
 
     // run it with hyper on localhost:3000
@@ -175,11 +175,6 @@ async fn select_pawn_promotion_piece(
         .other_player_considering_board(&chess_state.chessboard);
     save_board(name, chess_state.clone()).await.unwrap();
     return Json(chess_state);
-}
-
-async fn get_board() -> Json<ChessBoard> {
-    let chessboard = ChessBoard::new();
-    return Json(chessboard);
 }
 
 async fn get_game_name() -> Json<String> {
