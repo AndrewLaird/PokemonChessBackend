@@ -1,10 +1,8 @@
 use axum::{
     extract::{Json, Query},
     routing::get,
-    response::Response,
     Router,
 };
-use axum::extract::WebSocketUpgrade;
 
 use log::info;
 
