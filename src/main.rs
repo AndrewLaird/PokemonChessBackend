@@ -1,6 +1,12 @@
-use axum::extract::{Json, Query};
-use axum::{routing::get, Router};
-use log::{info};
+use axum::{
+    extract::{Json, Query},
+    routing::get,
+    response::Response,
+    Router,
+};
+use axum::extract::WebSocketUpgrade;
+
+use log::info;
 
 use serde::{Deserialize, Serialize};
 
@@ -9,6 +15,7 @@ use serde::{Deserialize, Serialize};
  * Undo button
  */
 
+pub mod websockets;
 pub mod chess;
 pub mod chess_history;
 pub mod chess_state;
@@ -30,12 +37,13 @@ use crate::game::Game;
 use crate::name_generator::generate_game_name;
 use crate::settings::Settings;
 use tower_http::cors::CorsLayer;
+use crate::websockets::handler;
+
 
 #[tokio::main]
 async fn main() {
     // Initialize the logger
     env_logger::init();
-
     let app = Router::new()
         .route("/", get(root))
         // can be kept as static
@@ -51,8 +59,9 @@ async fn main() {
         )
         .route("/get_previous_state", get(get_previous_state))
         .route("/get_next_state", get(get_next_state))
+        .route("/ws", get(handler))
         .layer(CorsLayer::permissive());
-
+    
     // run it with hyper on localhost:3000
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
         .serve(app.into_make_service())

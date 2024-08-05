@@ -6,8 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = "0.6.20"
+axum = {version="0.6.1", features = ["ws"]}
 env_logger = "0.10.0"
+futures-util = "0.3.30"
 http = "0.2.9"
 log = "0.4.20"
 rand = "0.8.5"
