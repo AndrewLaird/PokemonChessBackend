@@ -1,5 +1,5 @@
 use crate::chess_state_history::ChessStateHistory;
-use crate::chess_structs::{ChessState, Player};
+use crate::chess_structs::{ChessState};
 use crate::database::{load_game, save_game};
 use crate::settings::Settings;
 use serde::{Deserialize, Serialize};

@@ -1,7 +1,7 @@
 use crate::chess_structs::{
     Capture, Castle, ChessBoard, ChessPieceType, Move, Piece, Player, PokemonType, BOARD_SIZE,
 };
-use log::info;
+
 
 impl Piece {
     pub fn empty() -> Self {

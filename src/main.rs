@@ -1,6 +1,6 @@
 use axum::extract::{Json, Query};
 use axum::{routing::get, Router};
-use log::{error, info};
+use log::{info};
 
 use serde::{Deserialize, Serialize};
 
@@ -49,6 +49,8 @@ async fn main() {
             "/select_pawn_promotion_piece",
             get(select_pawn_promotion_piece),
         )
+        .route("/get_previous_state", get(get_previous_state))
+        .route("/get_next_state", get(get_next_state))
         .layer(CorsLayer::permissive());
 
     // run it with hyper on localhost:3000
@@ -176,5 +178,13 @@ async fn get_previous_state(Query(params): Query<GetGame>) -> Json<ChessState> {
     if !game.get_previous_state().is_none() {
         game.save().await;
     }
-    return Json(game.get_previous_state().unwrap());
+    return Json(game.get_current_state().unwrap());
+}
+
+async fn get_next_state(Query(params): Query<GetGame>) -> Json<ChessState> {
+    let mut game = Game::load(&params.name).await;
+    if !game.get_next_state().is_none() {
+        game.save().await;
+    }
+    return Json(game.get_current_state().unwrap());
 }

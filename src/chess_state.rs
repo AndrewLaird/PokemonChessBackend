@@ -1,7 +1,7 @@
 use crate::chess_structs::{
     ChessBoard, ChessState, InfoMessage, InteractionType, Move, Player, Winner,
 };
-use crate::settings::Settings;
+
 
 /**
  * Main Difference between chess_state and chess_board
