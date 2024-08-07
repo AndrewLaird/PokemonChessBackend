@@ -43,8 +43,8 @@ impl Game {
         );
     }
 
-    pub fn get_current_state(&mut self) -> Option<ChessState> {
-        return self.chess_state_history.get_current_state();
+    pub fn get_current_state(&self) -> Option<ChessState> {
+        return self.chess_state_history.get_current_state().clone();
     }
 
     pub fn move_piece(

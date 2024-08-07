@@ -338,7 +338,7 @@ impl ChessPieceType {
                                 type_interaction: None,
                                 capture: Some(Capture {
                                     row: new_row as usize,
-                                    col: new_row as usize,
+                                    col: new_col as usize,
                                     piece: board.get_piece(new_row as usize, new_row as usize),
                                 }),
                                 castle: None,

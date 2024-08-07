@@ -3,6 +3,8 @@ use axum::response::Response;
 use serde::{Deserialize, Serialize};
 use crate::game::Game;
 use crate::chess_structs::{ChessState, Move};
+use crate::app_state::AppState;
+use std::sync::Arc;
 
 #[derive(Deserialize)]
 #[serde(tag = "action", content = "payload")]
@@ -12,6 +14,7 @@ enum ClientMessage {
     SelectPawnPromotionPiece(SelectPawnPromotionPiecePayload),
     GetPreviousState(GetGamePayload),
     GetNextState(GetGamePayload),
+    GetCurrentState(GetGamePayload),
 }
 
 #[derive(Deserialize)]
@@ -69,6 +72,8 @@ pub async fn handle_socket(mut socket: WebSocket) {
         };
         if let Message::Text(text) = msg {
             let response = handle_message(text).await;
+            // send the response to everyone in the room
+            // need state to do that
             if socket.send(Message::Text(serde_json::to_string(&response).unwrap())).await.is_err() {
                 // client disconnected
                 return;
@@ -85,13 +90,14 @@ async fn handle_message(message: String) -> ServerMessage {
             ClientMessage::SelectPawnPromotionPiece(payload) => select_pawn_promotion_piece(payload).await,
             ClientMessage::GetPreviousState(payload) => get_previous_state(payload).await,
             ClientMessage::GetNextState(payload) => get_next_state(payload).await,
+            ClientMessage::GetCurrentState(payload) => get_current_state(payload).await,
         },
         Err(_) => ServerMessage::Error { message: "Invalid message format".to_string() },
     }
 }
 
 async fn get_moves(payload: GetMovesPayload) -> ServerMessage {
-    let mut game = Game::load(&payload.name).await;
+    let game = Game::load(&payload.name).await;
     let chess_state = game.get_current_state().unwrap();
     let valid_moves = chess_state.get_valid_moves(payload.row, payload.col);
     ServerMessage::Success(ServerMessageData::Moves { moves: valid_moves })
@@ -133,5 +139,10 @@ async fn get_next_state(payload: GetGamePayload) -> ServerMessage {
     if game.get_next_state().is_some() {
         game.save().await;
     }
+    ServerMessage::Success(ServerMessageData::ChessState { chess_state: game.get_current_state().unwrap() })
+}
+
+async fn get_current_state(payload: GetGamePayload) -> ServerMessage {
+    let game = Game::load(&payload.name).await;
     ServerMessage::Success(ServerMessageData::ChessState { chess_state: game.get_current_state().unwrap() })
 }

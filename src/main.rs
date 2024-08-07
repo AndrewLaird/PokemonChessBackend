@@ -28,6 +28,7 @@ pub mod pieces;
 pub mod pokemon_names;
 pub mod pokemon_types;
 pub mod settings;
+pub mod app_state;
 
 use crate::chess_state_history::ChessStateHistory;
 use crate::chess_structs::{ChessState, Move, Winner};
@@ -36,10 +37,12 @@ use crate::name_generator::generate_game_name;
 use crate::settings::Settings;
 use tower_http::cors::CorsLayer;
 use crate::websockets::handler;
+use crate::app_state::AppState;
 
 
 #[tokio::main]
 async fn main() {
+    let app_state = AppState::new();
     // Initialize the logger
     env_logger::init();
     let app = Router::new()
@@ -49,15 +52,8 @@ async fn main() {
         .route("/generate_name", get(get_game_name))
         .route("/get_game_state", get(get_game_state))
         // should be made into websocket connections
-        .route("/get_moves", get(get_moves))
-        .route("/move_piece", get(move_piece))
-        .route(
-            "/select_pawn_promotion_piece",
-            get(select_pawn_promotion_piece),
-        )
-        .route("/get_previous_state", get(get_previous_state))
-        .route("/get_next_state", get(get_next_state))
         .route("/ws", get(handler))
+        //.with_state(app_state)
         .layer(CorsLayer::permissive());
     
     // run it with hyper on localhost:3000
@@ -96,7 +92,7 @@ async fn start_game(Query(params): Query<StartGame>) -> Json<ChessState> {
 }
 
 async fn get_game_state(Query(params): Query<GetGame>) -> Json<Option<ChessState>> {
-    let mut game = Game::load(&params.name).await;
+    let game = Game::load(&params.name).await;
     let chess_state = game.get_current_state();
     return Json(chess_state);
 }
@@ -141,7 +137,7 @@ pub struct MoveResponse {
 }
 
 async fn get_moves(Query(params): Query<GetMoves>) -> Json<Vec<Move>> {
-    let mut game = Game::load(&params.name).await;
+    let game = Game::load(&params.name).await;
     let chess_state = game.get_current_state().unwrap();
     if chess_state.winner != Winner::NoneYet {
         return Json(vec![]);

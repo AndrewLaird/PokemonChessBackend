@@ -21,7 +21,7 @@ impl ChessStateHistory {
         };
     }
 
-    pub fn get_current_state(&mut self) -> Option<ChessState> {
+    pub fn get_current_state(&self) -> Option<ChessState> {
         let current_state_index: usize = self.current_state_index;
         if current_state_index < self.state_history.len() {
             return Some(self.state_history[current_state_index].clone());
