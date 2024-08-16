@@ -2,6 +2,7 @@ use axum::{
     extract::{Json, Query},
     routing::get,
     Router,
+    Server,
 };
 
 use log::info;
@@ -35,31 +36,40 @@ use crate::chess_structs::{ChessState, Move, Winner};
 use crate::game::Game;
 use crate::name_generator::generate_game_name;
 use crate::settings::Settings;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{CorsLayer, Any};
 use crate::websockets::handler;
 use crate::app_state::AppState;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use axum::http::Method;
 
+
+use axum::Extension;
 
 #[tokio::main]
 async fn main() {
-    let app_state: Arc<Mutex<AppState>> = Arc::new(Mutex::new(AppState::new()));
     // Initialize the logger
     env_logger::init();
+    println!("Starting server...");
+
+    let app_state = Arc::new(Mutex::new(AppState::new()));
+
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(vec![Method::GET, Method::OPTIONS])
+        .allow_headers(Any);
+
     let app = Router::new()
         .route("/", get(root))
-        // can be kept as static
         .route("/start", get(start_game))
         .route("/generate_name", get(get_game_name))
         .route("/get_game_state", get(get_game_state))
-        // should be made into websocket connections
         .route("/ws", get(handler))
-        .with_state(app_state)
-        .layer(CorsLayer::permissive());
-    
-    // run it with hyper on localhost:3000
-    axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
+        .layer(Extension(app_state))
+        .layer(cors);
+
+    println!("Server starting on 0.0.0.0:3000");
+    Server::bind(&"0.0.0.0:3000".parse().unwrap())
         .serve(app.into_make_service())
         .await
         .unwrap();

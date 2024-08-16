@@ -72,11 +72,18 @@ pub async fn handler(
     ws.on_upgrade(|socket| handle_socket(socket, app_state))
 }
 
-pub async fn handle_socket(socket: WebSocket, app_state: Arc<Mutex<AppState>>) {
+pub async fn handle_socket(mut socket: WebSocket, app_state: Arc<Mutex<AppState>>) {
     // we want to put the sender into our AppState so that when
     // a move is made, we can send it to everyone in the room
-    let (mut sender, mut receiver) = socket.split();
+    let (mut sender, receiver) = socket.split();
+    
+    tokio::spawn(handle_reciever(receiver, app_state.clone()));
+    // send a message to the client saying that they connected
+    let _ = sender.send(Message::Text(String::from("{Connected}"))).await;
 
+}
+
+async fn handle_reciever(mut receiver: SplitStream<WebSocket>, app_state: Arc<Mutex<AppState>>){
     while let Some(msg) = receiver.next().await {
         let msg = if let Ok(msg) = msg {
             msg
@@ -85,29 +92,29 @@ pub async fn handle_socket(socket: WebSocket, app_state: Arc<Mutex<AppState>>) {
             return;
         };
         if let Message::Text(text) = msg {
-            let response = handle_message(text, app_state.clone()).await;
+            let (room_name, response) = handle_message(text, app_state.clone()).await;
             // send the response to everyone in the room
             // need state to do that
-            if sender.send(Message::Text(serde_json::to_string(&response).unwrap())).await.is_err() {
-                // client disconnected
-                return;
-            }
+            let room_tx = app_state.lock().await.get_room_tx(&room_name);
+            // have to send as string not message
+            let _ = room_tx.send(serde_json::to_string(&response).unwrap());
         }
     }
+
 }
 
-async fn handle_message(message: String, app_state: Arc<Mutex<AppState>>) -> ServerMessage {
+async fn handle_message(message: String, app_state: Arc<Mutex<AppState>>) -> (String, ServerMessage) {
     match serde_json::from_str::<ClientMessage>(&message) {
         Ok(msg) => match msg {
-            ClientMessage::SubscribeToGame(payload) => subscribe_to_game(payload, app_state.clone()).await,
-            ClientMessage::GetMoves(payload) => get_moves(payload).await,
-            ClientMessage::MovePiece(payload) => move_piece(payload).await,
-            ClientMessage::SelectPawnPromotionPiece(payload) => select_pawn_promotion_piece(payload).await,
-            ClientMessage::GetPreviousState(payload) => get_previous_state(payload).await,
-            ClientMessage::GetNextState(payload) => get_next_state(payload).await,
-            ClientMessage::GetCurrentState(payload) => get_current_state(payload).await,
+            ClientMessage::SubscribeToGame(payload) => (payload.name.clone(), subscribe_to_game(payload, app_state.clone()).await),
+            ClientMessage::GetMoves(payload) => (payload.name.clone(), get_moves(payload).await),
+            ClientMessage::MovePiece(payload) => (payload.name.clone(), move_piece(payload).await),
+            ClientMessage::SelectPawnPromotionPiece(payload) => (payload.name.clone(), select_pawn_promotion_piece(payload).await),
+            ClientMessage::GetPreviousState(payload) => (payload.name.clone(), get_previous_state(payload).await),
+            ClientMessage::GetNextState(payload) => (payload.name.clone(), get_next_state(payload).await),
+            ClientMessage::GetCurrentState(payload) => (payload.name.clone(), get_current_state(payload).await),
         },
-        Err(_) => ServerMessage::Error { message: "Invalid message format".to_string() },
+        Err(_) => ("".to_string(), ServerMessage::Error { message: "Invalid message format".to_string() }),
     }
 }
 

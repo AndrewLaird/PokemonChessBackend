@@ -4,12 +4,18 @@ use tokio::sync::{broadcast, Mutex};
 
 // Global Map available to all requests, to keep track of users
 pub struct AppState {
-    rooms: HashMap<String, RoomState>,
+    pub rooms: HashMap<String, RoomState>,
 }
 
 struct RoomState {
-    users: Mutex<HashSet<String>>,
-    tx: broadcast::Sender<String>,
+    pub  users: HashSet<String>,
+    // tx means transmitter, we send messages to everyone in the room
+    // because each user in the room has the other end of the tx ( a rx )
+    // created via tx.subscribe()
+    // they are all waiting for messages to come out of their rx to send to their client
+    // and when their client sends a message, we write it into the tx so all other clients 
+    // in the room can receive it
+    pub tx: broadcast::Sender<String>,
 }
 
 impl AppState {
@@ -24,12 +30,20 @@ impl AppState {
         // then insert the room
         self.rooms.insert(name, RoomState::new());
     }
+
+    pub fn get_room_tx(&self, name: &str) -> broadcast::Sender<String> {
+        if let Some(room) = self.rooms.get(name) {
+            return room.tx.clone();
+        }
+        //panic!("Room {} not found", name);
+        return broadcast::channel(69).0;
+    }
 }
 
 impl RoomState {
     fn new() -> Self {
         Self {
-            users: Mutex::new(HashSet::new()),
+            users: HashSet::new(),
             tx: broadcast::channel(69).0,
         }
     }
