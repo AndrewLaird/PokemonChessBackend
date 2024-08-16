@@ -1,9 +1,10 @@
 use std::collections::{HashMap, HashSet};
 use tokio::sync::{broadcast, Mutex};
 
+
 // Global Map available to all requests, to keep track of users
 pub struct AppState {
-    rooms: Mutex<HashMap<String, RoomState>>,
+    rooms: HashMap<String, RoomState>,
 }
 
 struct RoomState {
@@ -14,8 +15,14 @@ struct RoomState {
 impl AppState {
     pub fn new() -> Self {
         Self {
-            rooms: Mutex::new(HashMap::new()),
+            rooms: HashMap::new(),
         }
+    }
+
+    pub fn add_room(&mut self, name: String) {
+        // wait for the lock to be released
+        // then insert the room
+        self.rooms.insert(name, RoomState::new());
     }
 }
 

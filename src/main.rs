@@ -38,11 +38,13 @@ use crate::settings::Settings;
 use tower_http::cors::CorsLayer;
 use crate::websockets::handler;
 use crate::app_state::AppState;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 
 #[tokio::main]
 async fn main() {
-    let app_state = AppState::new();
+    let app_state: Arc<Mutex<AppState>> = Arc::new(Mutex::new(AppState::new()));
     // Initialize the logger
     env_logger::init();
     let app = Router::new()
@@ -53,7 +55,7 @@ async fn main() {
         .route("/get_game_state", get(get_game_state))
         // should be made into websocket connections
         .route("/ws", get(handler))
-        //.with_state(app_state)
+        .with_state(app_state)
         .layer(CorsLayer::permissive());
     
     // run it with hyper on localhost:3000
