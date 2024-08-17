@@ -31,12 +31,13 @@ impl AppState {
         self.rooms.insert(name, RoomState::new());
     }
 
-    pub fn get_room_tx(&self, name: &str) -> broadcast::Sender<String> {
+    pub fn get_room_tx(&mut self, name: &str) -> broadcast::Sender<String> {
         if let Some(room) = self.rooms.get(name) {
             return room.tx.clone();
         }
-        //panic!("Room {} not found", name);
-        return broadcast::channel(69).0;
+        // room not found, create a new one
+        self.add_room(name.to_string());
+        return self.get_room_tx(name);
     }
 }
 
