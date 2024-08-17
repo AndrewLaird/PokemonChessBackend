@@ -47,7 +47,6 @@ impl ChessBoard {
 
         let current_king_position = self.find_king_position(current_player);
         let opponent_king_position = self.find_king_position(opponent);
-        println!("{:?}, {:?}", current_king_position, opponent_king_position);
 
         match (current_king_position, opponent_king_position) {
             (None, None) => Winner::Tie,

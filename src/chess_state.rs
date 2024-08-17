@@ -85,6 +85,9 @@ impl ChessState {
     }
 
     pub fn get_valid_moves(&self, row: usize, col: usize) -> Vec<Move> {
+        if self.chessboard.get_winner(self.player) != Winner::NoneYet {
+            return vec![];
+        }
         let moves = self
             .chessboard
             .possible_moves_for_piece(row, col, self.player);

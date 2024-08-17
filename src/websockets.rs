@@ -94,7 +94,6 @@ pub async fn handle_socket(socket: WebSocket, app_state: Arc<Mutex<AppState>>) {
 
 async fn handle_sender(mut sender: SplitSink<WebSocket, Message>, mut user_rx: broadcast::Receiver<String> ) {
     while let Ok(msg) = user_rx.recv().await {
-        println!("{}", msg);
         let _ = sender.send(Message::Text(msg)).await;
     }
 }
@@ -136,7 +135,6 @@ async fn handle_reciever(mut receiver: SplitStream<WebSocket>, app_state: Arc<Mu
             // need state to do that
             let room_tx = app_state.lock().await.get_room_tx(&room_name);
             // have to send as string not message
-            println!("{}", serde_json::to_string(&response).unwrap());
             let _ = room_tx.send(serde_json::to_string(&response).unwrap());
         }
     }

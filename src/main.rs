@@ -148,58 +148,7 @@ pub struct MoveResponse {
     pub chess_state: ChessState,
 }
 
-async fn get_moves(Query(params): Query<GetMoves>) -> Json<Vec<Move>> {
-    let game = Game::load(&params.name).await;
-    let chess_state = game.get_current_state().unwrap();
-    if chess_state.winner != Winner::NoneYet {
-        return Json(vec![]);
-    }
-    let valid_moves = chess_state.get_valid_moves(params.row, params.col);
-    return Json(valid_moves);
-}
-
-async fn move_piece(Query(params): Query<UserMove>) -> Json<ChessState> {
-    let name = params.name.clone();
-    let mut game = Game::load(&name).await;
-    let board_changed = game.move_piece(
-        params.from_row,
-        params.from_col,
-        params.to_row,
-        params.to_col,
-    );
-    if board_changed {
-        game.save().await;
-    }
-    return Json(game.get_current_state().unwrap());
-}
-
-async fn select_pawn_promotion_piece(
-    Query(params): Query<SelectPawnPromotionPiece>,
-) -> Json<ChessState> {
-    let name = params.name.clone();
-    let mut game = Game::load(&name).await;
-    game.select_pawn_promotion_piece(params.piece_str).unwrap();
-    game.save().await;
-    return Json(game.get_current_state().unwrap());
-}
-
 async fn get_game_name() -> Json<String> {
     let name = generate_game_name().await.unwrap();
     return Json(name);
-}
-
-async fn get_previous_state(Query(params): Query<GetGame>) -> Json<ChessState> {
-    let mut game = Game::load(&params.name).await;
-    if !game.get_previous_state().is_none() {
-        game.save().await;
-    }
-    return Json(game.get_current_state().unwrap());
-}
-
-async fn get_next_state(Query(params): Query<GetGame>) -> Json<ChessState> {
-    let mut game = Game::load(&params.name).await;
-    if !game.get_next_state().is_none() {
-        game.save().await;
-    }
-    return Json(game.get_current_state().unwrap());
 }
